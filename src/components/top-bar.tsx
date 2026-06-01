@@ -23,7 +23,6 @@ export async function TopBar() {
               <TopBarNav
                 links={[
                   { href: "/", label: "Events", exact: true },
-                  { href: "/leaderboard", label: "Leaderboard" },
                 ]}
                 username={profile.username}
               />
