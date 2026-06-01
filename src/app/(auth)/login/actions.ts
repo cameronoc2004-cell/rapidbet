@@ -3,10 +3,11 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { profiles } from "@/db/schema";
-import { postTransaction } from "@/db/ledger";
+import { profiles, wallets } from "@/db/schema";
+import { postWalletTx } from "@/db/wallet";
+import { logAudit } from "@/db/audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SIGNUP_GC_BONUS, SIGNUP_SC_BONUS } from "@/lib/config";
+import { STARTER_VIRTUAL_BALANCE_MINOR } from "@/lib/config";
 
 function field(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -27,7 +28,7 @@ export async function signUp(formData: FormData) {
     redirect("/login?mode=signup&error=invalid_email");
   }
 
-  // Username uniqueness — check before calling Supabase to avoid orphan auth users.
+  // Pre-check username before calling Supabase to avoid orphan auth users.
   const taken = await db
     .select()
     .from(profiles)
@@ -44,24 +45,35 @@ export async function signUp(formData: FormData) {
     redirect(`/login?mode=signup&error=${code}`);
   }
 
-  // Create profile + seed starter balances atomically.
+  // Provision profile + wallet + signup bonus in one tx.
   await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(profiles)
       .values({ authUserId: data.user!.id, username })
       .returning();
-    if (SIGNUP_GC_BONUS > 0) {
-      await postTransaction(
-        { userId: created.id, currency: "GC", delta: SIGNUP_GC_BONUS, reason: "signup_bonus" },
+    await tx.insert(wallets).values({ userId: created.id });
+    if (STARTER_VIRTUAL_BALANCE_MINOR > 0) {
+      await postWalletTx(
+        {
+          userId: created.id,
+          moneyKind: "virtual",
+          deltaMinor: STARTER_VIRTUAL_BALANCE_MINOR,
+          reason: "signup_bonus",
+          idempotencyKey: `signup_bonus:${created.id}`,
+        },
         tx,
       );
     }
-    if (SIGNUP_SC_BONUS > 0) {
-      await postTransaction(
-        { userId: created.id, currency: "SC", delta: SIGNUP_SC_BONUS, reason: "signup_bonus" },
-        tx,
-      );
-    }
+    await logAudit(
+      {
+        actorUserId: created.id,
+        action: "user.signup",
+        refType: "profile",
+        refId: created.id,
+        payload: { email, username },
+      },
+      tx,
+    );
   });
 
   redirect("/");

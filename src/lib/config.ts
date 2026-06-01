@@ -1,12 +1,60 @@
-// App-wide constants. Tweak the team name here while the MVP only covers one franchise.
+// =============================================================================
+// PRODUCT + COMPLIANCE CONFIG
+//
+// This file holds the gates that separate Phase 1 (free-to-play, ships now) from
+// Phase 2 (real-money, ships AFTER: legal opinion + KYC vendor + geo vendor +
+// gaming-payment processor + populated PERMITTED_STATES). All gates DEFAULT TO
+// THE CLOSED / SAFE STATE.
+//
+// READ BEFORE CHANGING ANY DEFAULT: ../../AGENTS.md and the project brief.
+// Money is never enabled by code change alone — it requires every dependency
+// below to be live AND a written legal opinion in hand. // TODO(legal)
+// =============================================================================
+
+// Master kill-switch for any real-money flow. STAYS FALSE in Phase 1.
+// Flipping this to true is not a code decision — it is a legal + operations
+// decision documented elsewhere. Every code path that handles cash MUST also
+// check REAL_MONEY_ENABLED at runtime.
+export const REAL_MONEY_ENABLED =
+  process.env.REAL_MONEY_ENABLED === "true";
+
+// Two-letter US state codes where real-money entry is legally permitted.
+// EMPTY UNTIL POPULATED BY GAMING COUNSEL. The geo check rejects everywhere
+// not listed here. Do not hardcode — read from env so legal can change without
+// a deploy. // TODO(legal)
+export const PERMITTED_STATES: string[] = (process.env.PERMITTED_STATES ?? "")
+  .split(",")
+  .map((s) => s.trim().toUpperCase())
+  .filter((s) => /^[A-Z]{2}$/.test(s));
+
+// Operator commission on each pool, in basis points. 100 bps = 1.00%.
+// Revenue comes ONLY from this — operator never takes a position, never sets a
+// line, never holds stake in any outcome. This is what keeps the product
+// peer-to-peer.
+export const COMMISSION_RATE_BPS = Number(
+  process.env.COMMISSION_RATE_BPS ?? 100,
+);
+
+// Free-to-play starter balance in MINOR UNITS (cents). $100 by default.
+// All money math everywhere in this app is integer minor units. Never floats.
+export const STARTER_VIRTUAL_BALANCE_MINOR = Number(
+  process.env.STARTER_VIRTUAL_BALANCE_MINOR ?? 10_000,
+);
+
+// Minimum age for any real-money entry. Varies by jurisdiction (18/19/21);
+// MIN_AGE_YEARS is the floor enforced application-wide. Per-state overrides
+// happen in the geo/age check pipeline. // TODO(legal)
+export const MIN_AGE_YEARS = Number(process.env.MIN_AGE_YEARS ?? 21);
+
+// Branding (safe to expose to browser via NEXT_PUBLIC_).
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Rapid Bet";
 export const TEAM_NAME = process.env.NEXT_PUBLIC_TEAM_NAME ?? "Home Team";
 
-// Starter virtual currency given on signup (play money).
-export const SIGNUP_GC_BONUS = 100;
-export const SIGNUP_SC_BONUS = 5;
-
-// Admin gate. MVP only — replace with real RBAC before any real money flows.
+// Admin gate (MVP). Replace with proper RBAC before Phase 2. // TODO(security)
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "letmein";
 
-// Cookie signing secret. MUST be overridden in production via env.
-export const SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-only-not-secure";
+// Helper used at every real-money entry point. Centralized so legal/eng can
+// reason about exactly which conditions must be true to handle cash.
+export function realMoneyAllowed(): boolean {
+  return REAL_MONEY_ENABLED && PERMITTED_STATES.length > 0;
+}
