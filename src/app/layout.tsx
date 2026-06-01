@@ -1,37 +1,42 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { TopBar } from "@/components/top-bar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
-import { BalanceHeader } from "@/components/balance-header";
-
 export const metadata: Metadata = {
-  title: "Rapid Bet",
-  description: "Play-money quarter-by-quarter sports predictions.",
+  title: "Rapid Bet — Skill Contests",
+  description: "Per-quarter prediction contests. Closest answer wins the pool.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-        <BalanceHeader />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+      <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text)]">
+        <TopBar />
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
           {children}
         </main>
       </body>
