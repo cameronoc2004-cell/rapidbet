@@ -4,9 +4,10 @@ import { getCurrentProfile } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { APP_NAME } from "@/lib/config";
 import { BalancePill } from "./balance-pill";
+import { TopBarNav, TopBarWordmark } from "./top-bar-nav";
 
-// Persistent top bar on every page. Server component so the wordmark + auth
-// state come from the request; BalancePill is a thin client island.
+// Persistent top bar. Server component for auth + wallet; nav illumination is
+// handled by the inner client component (needs usePathname).
 export async function TopBar() {
   const profile = await getCurrentProfile();
   const wallet = profile ? await getWallet(profile.id) : null;
@@ -14,30 +15,18 @@ export async function TopBar() {
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="font-display text-base font-bold tracking-tight text-[var(--text)]">
-            {APP_NAME}
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            skill contests
-          </span>
-        </Link>
+        <TopBarWordmark appName={APP_NAME} tagline="skill contests" />
 
         <nav className="flex items-center gap-3">
           {profile ? (
             <>
-              <Link
-                href="/leaderboard"
-                className="hidden text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text)] sm:inline"
-              >
-                Leaderboard
-              </Link>
-              <Link
-                href="/me"
-                className="hidden text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text)] sm:inline"
-              >
-                @{profile.username}
-              </Link>
+              <TopBarNav
+                links={[
+                  { href: "/", label: "Events", exact: true },
+                  { href: "/leaderboard", label: "Leaderboard" },
+                ]}
+                username={profile.username}
+              />
               <BalancePill balanceMinor={wallet?.virtualMinor ?? 0} />
               <form action={logout}>
                 <button

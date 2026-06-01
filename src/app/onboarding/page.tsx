@@ -3,15 +3,14 @@ import {
   getCurrentSession,
   getOnboardingStatus,
 } from "@/lib/session";
-import { PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "@/lib/config";
+import { PLAY_MIN_AGE_YEARS } from "@/lib/config";
 import { resendVerification } from "../(auth)/login/actions";
-import { submitDateOfBirth, submitState } from "./actions";
+import { submitDateOfBirth, verifyLocation } from "./actions";
+import { LocationGate } from "@/components/location-gate";
 
 const ERR: Record<string, string> = {
   invalid_dob: "Enter a valid date.",
   underage: `You must be at least ${PLAY_MIN_AGE_YEARS} to play.`,
-  invalid_state: "Pick your state.",
-  state_blocked: "We can't offer contests in that state right now.",
 };
 
 export const dynamic = "force-dynamic";
@@ -127,48 +126,17 @@ export default async function OnboardingPage({
 
       <StepCard
         n={3}
-        title="Confirm your state"
+        title="Verify your location"
         done={status.stateVerified}
       >
         {status.stateVerified ? (
           <p className="text-sm text-[var(--text-muted)]">
-            State on file:{" "}
-            <span className="font-mono text-[var(--text)]">{session.profile.stateCode}</span>.
+            Verified in{" "}
+            <span className="font-mono text-[var(--text)]">{session.profile.stateCode}</span>{" "}
+            via device GPS.
           </p>
         ) : (
-          <form action={submitState} className="space-y-3">
-            <label className="block">
-              <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                State
-              </span>
-              <select
-                name="stateCode"
-                required
-                defaultValue=""
-                className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
-              >
-                <option value="" disabled>
-                  Select state
-                </option>
-                {PLAY_PERMITTED_STATES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="text-[11px] text-[var(--text-muted)]">
-              Real-money play requires a verified device-GPS location and is
-              limited to states approved by our gaming counsel. Phase 1 is
-              free-to-play.
-            </p>
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
-            >
-              Save
-            </button>
-          </form>
+          <LocationGate verifyAction={verifyLocation} />
         )}
       </StepCard>
 
