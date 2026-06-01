@@ -2,6 +2,7 @@ import Link from "next/link";
 import { sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { profiles, skillScores } from "@/db/schema";
+import { requireOnboarded } from "@/lib/session";
 
 // Cumulative skill leaderboards. This page is product (a ladder players climb)
 // AND a load-bearing piece of the legal posture: it surfaces repeat-skill
@@ -13,6 +14,7 @@ export default async function LeaderboardPage({
 }: {
   searchParams: Promise<{ scope?: string }>;
 }) {
+  await requireOnboarded();
   const { scope = "season" } = await searchParams;
   const currentSeason = String(new Date().getUTCFullYear());
 

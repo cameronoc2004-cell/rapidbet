@@ -1,14 +1,15 @@
 import { notFound, redirect } from "next/navigation";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions, settlements } from "@/db/schema";
-import { getCurrentProfileId } from "@/lib/session";
+import { requireOnboarded } from "@/lib/session";
 import { submitPrediction, ContestError } from "@/lib/contest";
 import { InsufficientFundsError } from "@/db/wallet";
 import { revalidatePath } from "next/cache";
 import { ContestHeader } from "@/components/contest-header";
 import { QuestionCard, type QuestionCardData } from "@/components/question-card";
 import { WinOverlay } from "@/components/win-overlay";
+import { formatMoney } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,8 @@ interface PageProps {
 
 async function submitAction(formData: FormData): Promise<void> {
   "use server";
-  const userId = await getCurrentProfileId();
-  if (!userId) redirect("/login");
+  const session = await requireOnboarded();
+  const userId = session.profile!.id;
 
   const questionId = Number(formData.get("questionId"));
   const predictionValue = Number(formData.get("prediction"));
@@ -31,7 +32,6 @@ async function submitAction(formData: FormData): Promise<void> {
     if (e instanceof InsufficientFundsError) throw new Error("Not enough virtual balance.");
     throw e;
   }
-
   revalidatePath("/");
   revalidatePath(`/contest/[gameId]`, "page");
 }
@@ -49,6 +49,9 @@ function humanize(code: string): string {
 }
 
 export default async function ContestPage({ params, searchParams }: PageProps) {
+  const session = await requireOnboarded();
+  const userId = session.profile!.id;
+
   const { gameId: gameIdRaw } = await params;
   const { celebrate } = await searchParams;
   const gameId = Number(gameIdRaw);
@@ -57,77 +60,85 @@ export default async function ContestPage({ params, searchParams }: PageProps) {
   const [game] = await db.select().from(games).where(eq(games.id, gameId)).limit(1);
   if (!game) notFound();
 
-  const userId = await getCurrentProfileId();
-
-  const allQuestions = await db
-    .select({
-      q: questions,
-      // Live entrants per question for showing pool size in the header maybe later.
-      entrantCount: sql<number>`coalesce(count(${entries.id}), 0)::int`,
-      poolMinor: sql<number>`coalesce(sum(${entries.feePaidMinor}), 0)::bigint`,
-    })
+  // Pull all questions for the game once, in order of lock time.
+  const qList = await db
+    .select()
     .from(questions)
-    .leftJoin(entries, eq(entries.questionId, questions.id))
     .where(eq(questions.gameId, gameId))
-    .groupBy(questions.id)
-    .orderBy(questions.locksAt);
+    .orderBy(asc(questions.locksAt));
 
-  const myEntries = userId
-    ? await db
-        .select()
-        .from(entries)
-        .where(
-          and(
-            eq(entries.userId, userId),
-            inArray(
-              entries.questionId,
-              allQuestions.map((r) => r.q.id),
-            ),
-          ),
-        )
-    : [];
-  const myEntryByQ = new Map(myEntries.map((e) => [e.questionId, e]));
-
-  // The "win moment": find the most recent settled question the user won
-  // (positive payout) so we can celebrate it.  ?celebrate=1 forces it visible
-  // for demoability.
-  let celebrateAmountMinor: number | null = null;
-  if (userId) {
-    const winningEntry = myEntries
-      .filter((e) => (e.payoutMinor ?? 0) > 0)
-      .sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0];
-    const winningQuestion = allQuestions.find(
-      (r) => winningEntry && r.q.id === winningEntry.questionId && r.q.status === "settled",
+  const allMyEntries = await db
+    .select()
+    .from(entries)
+    .where(
+      and(
+        eq(entries.userId, userId),
+        inArray(entries.questionId, qList.map((q) => q.id)),
+      ),
     );
-    if (winningQuestion && winningEntry) {
-      celebrateAmountMinor = winningEntry.payoutMinor ?? null;
-    }
-    // Manual force from URL — handy for showing the overlay during demo without
-    // having to time settlement.
-    if (celebrate === "1" && celebrateAmountMinor == null) {
-      celebrateAmountMinor = 1000; // $10 demo amount
-    }
-  }
+  const myEntryByQ = new Map(allMyEntries.map((e) => [e.questionId, e]));
 
-  // Resolve game live label from any settled question (if game is in progress
-  // we just show "LIVE"; deeper live state is Phase 2 with the data feed).
+  // ACTIVE QUESTION: the open question with the smallest locksAt that is still
+  // in the future. The brief calls for one question per game/quarter at a time;
+  // when the active one expires, this query naturally finds the next.
+  const now = Date.now();
+  const activeQuestion =
+    qList.find(
+      (q) => q.status === "open" && q.locksAt.getTime() > now,
+    ) ?? null;
+
+  // If the user has an entry on a question that has locked but isn't yet
+  // settled, surface it as the "current" card too (it'll show submitted state).
+  // Once that question settles or voids, the next open question takes over.
+  const lockedNotSettledMine = qList.find((q) => {
+    const mine = myEntryByQ.get(q.id);
+    return (
+      mine != null &&
+      q.status === "open" === false &&
+      q.status !== "settled" &&
+      q.status !== "voided"
+    );
+  }) ?? null;
+
+  const featured = activeQuestion ?? lockedNotSettledMine;
+
+  const card: QuestionCardData | null = featured
+    ? {
+        questionId: featured.id,
+        title: featured.title,
+        description: featured.description ?? null,
+        statType: featured.statType,
+        subject: featured.subject,
+        window: featured.window,
+        entryFeeMinor: featured.entryFeeMinor,
+        locksAt: featured.locksAt.toISOString(),
+        myPrediction: myEntryByQ.get(featured.id)?.predictionValue ?? null,
+      }
+    : null;
+
+  // Win-overlay logic: most recent settled question the user won.
+  let celebrateAmountMinor: number | null = null;
+  const winningEntry = allMyEntries
+    .filter((e) => (e.payoutMinor ?? 0) > 0)
+    .sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0];
+  if (winningEntry) celebrateAmountMinor = winningEntry.payoutMinor ?? null;
+  if (celebrate === "1" && celebrateAmountMinor == null) celebrateAmountMinor = 1000;
+
   const liveLabel = game.status === "in_progress" ? "LIVE" : null;
 
-  const cards: QuestionCardData[] = allQuestions
-    .filter((r) => r.q.status === "open" || (myEntryByQ.get(r.q.id) != null && r.q.status !== "voided"))
-    .map((r) => ({
-      questionId: r.q.id,
-      title: r.q.title,
-      description: r.q.description ?? null,
-      statType: r.q.statType,
-      subject: r.q.subject,
-      window: r.q.window,
-      entryFeeMinor: r.q.entryFeeMinor,
-      locksAt: r.q.locksAt.toISOString(),
-      myPrediction: myEntryByQ.get(r.q.id)?.predictionValue ?? null,
-    }));
+  // "Your entries this game" rail: prior entries that aren't the current card.
+  const railEntries = allMyEntries
+    .filter((e) => (featured ? e.questionId !== featured.id : true))
+    .map((e) => ({
+      entry: e,
+      question: qList.find((q) => q.id === e.questionId)!,
+    }))
+    .filter((r) => !!r.question);
 
-  const settledIds = allQuestions.filter((r) => r.q.status === "settled").map((r) => r.q.id);
+  // Settlements for any settled rail entries (to show official result + payout).
+  const settledIds = railEntries
+    .filter((r) => r.question.status === "settled")
+    .map((r) => r.question.id);
   const settlementByQ = settledIds.length > 0
     ? new Map(
         (
@@ -150,68 +161,84 @@ export default async function ContestPage({ params, searchParams }: PageProps) {
         liveLabel={liveLabel}
       />
 
-      {/* Active / submitted question cards */}
-      {cards.length > 0 ? (
-        <ul className="space-y-3">
-          {cards.map((c) => (
-            <li key={c.questionId}>
-              <QuestionCard data={c} submitAction={submitAction} signedIn={!!userId} />
-            </li>
-          ))}
-        </ul>
+      {/* The one active card */}
+      {card ? (
+        <QuestionCard data={card} submitAction={submitAction} signedIn={true} />
       ) : (
-        <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)]/60 px-6 py-12 text-center text-sm text-[var(--text-muted)]">
-          No questions open for this event right now.
+        <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)]/60 px-6 py-12 text-center">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Standby
+          </div>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
+            No question open right now. The next one appears when the next
+            quarter goes live.
+          </p>
         </div>
       )}
 
-      {/* Recently settled — calm row, builds trust */}
-      {settledIds.length > 0 && (
+      {/* Your entries this game */}
+      {railEntries.length > 0 && (
         <section>
           <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Recently settled
+            Your entries this game
           </h2>
           <ul className="mt-3 space-y-2">
-            {allQuestions
-              .filter((r) => r.q.status === "settled")
-              .map((r) => {
-                const s = settlementByQ.get(r.q.id);
-                const mine = myEntryByQ.get(r.q.id);
+            {railEntries
+              .sort((a, b) => a.question.locksAt.getTime() - b.question.locksAt.getTime())
+              .map(({ entry, question }) => {
+                const s = settlementByQ.get(question.id);
+                const won = (entry.payoutMinor ?? 0) > 0;
                 return (
                   <li
-                    key={r.q.id}
-                    className="rounded-lg border border-[var(--border)] bg-[var(--surface)]/70 px-4 py-3"
+                    key={entry.id}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                   >
                     <div className="flex items-baseline justify-between gap-3">
                       <div>
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                          {r.q.window} · {r.q.statType.replace(/_/g, " ")} · {r.q.subject}
+                        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                          {question.window} · {question.statType.replace(/_/g, " ")} ·{" "}
+                          {question.subject}
                         </div>
-                        <div className="mt-0.5 text-sm text-[var(--text)]">{r.q.title}</div>
+                        <div className="mt-0.5 text-sm text-[var(--text)]">
+                          {question.title}
+                        </div>
                       </div>
-                      <div className="text-right text-xs text-[var(--text-muted)]">
-                        Official{" "}
-                        <span className="font-mono text-[var(--text)]">
-                          {s?.officialResult ?? "—"}
-                        </span>
+                      <div className="text-right text-xs">
+                        <div className="text-[var(--text-muted)]">
+                          You{" "}
+                          <span className="font-mono text-[var(--text)]">
+                            {entry.predictionValue}
+                          </span>
+                        </div>
+                        {question.status === "settled" && s ? (
+                          <div className="font-mono text-[var(--text-muted)]">
+                            Official{" "}
+                            <span className="text-[var(--text)]">
+                              {s.officialResult}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="font-mono text-[var(--text-muted)]">
+                            {statusLabel(question.status)}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {mine && (
+                    {question.status === "settled" && (
                       <div className="mt-2 flex items-center justify-between text-xs">
                         <span className="text-[var(--text-muted)]">
-                          You: <span className="font-mono text-[var(--text)]">{mine.predictionValue}</span>
-                          {" · err "}
-                          <span className="font-mono">{mine.absError?.toFixed(2)}</span>
+                          err{" "}
+                          <span className="font-mono">{entry.absError?.toFixed(2)}</span>
                         </span>
                         <span
                           className={
-                            (mine.payoutMinor ?? 0) > 0
+                            won
                               ? "font-mono font-semibold text-[var(--primary)]"
                               : "font-mono text-[var(--text-muted)]"
                           }
                         >
-                          {(mine.payoutMinor ?? 0) > 0 ? "+" : ""}
-                          {formatPayout(mine.payoutMinor ?? 0)}
+                          {won ? "+" : ""}
+                          {formatMoney(entry.payoutMinor ?? 0)}
                         </span>
                       </div>
                     )}
@@ -227,8 +254,17 @@ export default async function ContestPage({ params, searchParams }: PageProps) {
   );
 }
 
-function formatPayout(minor: number): string {
-  const sign = minor < 0 ? "-" : "";
-  const abs = Math.abs(minor);
-  return `${sign}$${(abs / 100).toFixed(2)}`;
+function statusLabel(s: string): string {
+  switch (s) {
+    case "open":
+      return "OPEN";
+    case "locked":
+      return "LOCKED";
+    case "settled":
+      return "SETTLED";
+    case "voided":
+      return "VOIDED";
+    default:
+      return s.toUpperCase();
+  }
 }

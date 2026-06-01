@@ -1,26 +1,82 @@
 import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { profiles } from "@/db/schema";
 import { createSupabaseServerClient } from "./supabase/server";
+import { PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "./config";
 
-// Returns the app-side profile row for the currently signed-in Supabase user,
-// or null if no one is signed in.
-export async function getCurrentProfile() {
+export interface OnboardingStatus {
+  emailVerified: boolean;
+  ageVerified: boolean;
+  stateVerified: boolean;
+  // True iff every gate above is satisfied AND profiles.onboardedAt is set.
+  complete: boolean;
+}
+
+// Auth helper: returns the Supabase auth.users row (with email_confirmed_at)
+// alongside our app-side profile, or null if not signed in.
+export async function getCurrentSession() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  const rows = await db.select().from(profiles).where(eq(profiles.authUserId, user.id)).limit(1);
+  return { authUser: user, profile: rows[0] ?? null };
+}
 
-  const rows = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.authUserId, user.id))
-    .limit(1);
-  return rows[0] ?? null;
+export async function getCurrentProfile() {
+  const s = await getCurrentSession();
+  return s?.profile ?? null;
 }
 
 export async function getCurrentProfileId(): Promise<number | null> {
   const p = await getCurrentProfile();
   return p?.id ?? null;
+}
+
+// Compute the gate status from an already-fetched session.
+export function getOnboardingStatus(session: Awaited<ReturnType<typeof getCurrentSession>>): OnboardingStatus {
+  if (!session) {
+    return { emailVerified: false, ageVerified: false, stateVerified: false, complete: false };
+  }
+  const { authUser, profile } = session;
+  const emailVerified = Boolean(authUser?.email_confirmed_at);
+  const ageVerified = !!profile?.dateOfBirth && computeAgeYears(profile.dateOfBirth) >= PLAY_MIN_AGE_YEARS;
+  const stateVerified =
+    !!profile?.stateCode && PLAY_PERMITTED_STATES.includes(profile.stateCode.toUpperCase());
+  const complete = !!profile?.onboardedAt && emailVerified && ageVerified && stateVerified;
+  return { emailVerified, ageVerified, stateVerified, complete };
+}
+
+// Gate any page that requires a fully onboarded user.
+// - No session → /login
+// - Session but onboarding incomplete → /onboarding
+// Returns the session if it passes.
+export async function requireOnboarded() {
+  const session = await getCurrentSession();
+  if (!session) redirect("/login");
+  const status = getOnboardingStatus(session);
+  if (!status.complete) redirect("/onboarding");
+  return session;
+}
+
+// Used by /onboarding itself: needs auth but onboarding may be incomplete.
+export async function requireSession() {
+  const session = await getCurrentSession();
+  if (!session) redirect("/login");
+  return session;
+}
+
+export function computeAgeYears(isoDob: string): number {
+  // isoDob = yyyy-mm-dd
+  const [y, m, d] = isoDob.split("-").map(Number);
+  if (!y || !m || !d) return 0;
+  const today = new Date();
+  let age = today.getUTCFullYear() - y;
+  const beforeBirthday =
+    today.getUTCMonth() + 1 < m ||
+    (today.getUTCMonth() + 1 === m && today.getUTCDate() < d);
+  if (beforeBirthday) age -= 1;
+  return age;
 }

@@ -1,9 +1,10 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, profiles, questions, settlements } from "@/db/schema";
-import { getCurrentProfileId } from "@/lib/session";
+import { getCurrentProfileId, requireOnboarded } from "@/lib/session";
 
 export default async function ResultsPage() {
+  await requireOnboarded();
   const me = await getCurrentProfileId();
 
   const settled = await db

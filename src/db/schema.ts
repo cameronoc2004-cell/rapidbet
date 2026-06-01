@@ -73,11 +73,20 @@ export const geoCheckResultEnum = pgEnum("geo_check_result", [
 
 // --------- Identity ---------
 // 1:1 with Supabase auth.users. We never store passwords here.
+// Onboarding gates are denormalized onto the row because they're checked on
+// every gated page load. Email-verified is read from auth.users.email_confirmed_at
+// directly (Supabase owns that).
 export const profiles = pgTable("profiles", {
   id: serial("id").primaryKey(),
   authUserId: uuid("auth_user_id").notNull().unique(),
   username: text("username").notNull().unique(),
   role: userRoleEnum("role").notNull().default("user"),
+  // Date of birth (ISO yyyy-mm-dd). Required to play; must be >= 18 today.
+  dateOfBirth: text("date_of_birth"),
+  // Two-letter US state code. Must be in PLAY_PERMITTED_STATES.
+  stateCode: text("state_code"),
+  // Non-null = user has cleared every onboarding gate.
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),

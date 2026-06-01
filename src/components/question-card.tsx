@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatMoney } from "@/lib/format";
 import { CountdownTimer } from "./countdown-timer";
@@ -29,6 +30,7 @@ interface QuestionCardProps {
 type CardState = "active" | "buying" | "submitted" | "optedOut" | "expired";
 
 export function QuestionCard(props: QuestionCardProps) {
+  const router = useRouter();
   const initial: CardState =
     props.data.myPrediction != null
       ? "submitted"
@@ -41,6 +43,14 @@ export function QuestionCard(props: QuestionCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // After the card animates out (expired or opted out), trigger a router
+  // refresh so the page server-renders the next question for this game.
+  useEffect(() => {
+    if (state !== "expired" && state !== "optedOut") return;
+    const t = setTimeout(() => router.refresh(), 320);
+    return () => clearTimeout(t);
+  }, [state, router]);
 
   // Autofocus the answer entry when entering State B.
   useEffect(() => {

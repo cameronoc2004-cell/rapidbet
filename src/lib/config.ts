@@ -18,7 +18,7 @@
 export const REAL_MONEY_ENABLED =
   process.env.REAL_MONEY_ENABLED === "true";
 
-// Two-letter US state codes where real-money entry is legally permitted.
+// Two-letter US state codes where REAL-MONEY entry is legally permitted.
 // EMPTY UNTIL POPULATED BY GAMING COUNSEL. The geo check rejects everywhere
 // not listed here. Do not hardcode — read from env so legal can change without
 // a deploy. // TODO(legal)
@@ -26,6 +26,25 @@ export const PERMITTED_STATES: string[] = (process.env.PERMITTED_STATES ?? "")
   .split(",")
   .map((s) => s.trim().toUpperCase())
   .filter((s) => /^[A-Z]{2}$/.test(s));
+
+// US states where FREE-TO-PLAY is permitted. Defaults to all 50 + DC in Phase 1
+// because there is no money involved. Override via env if counsel restricts the
+// play-money experience too.
+const ALL_US = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY","DC",
+];
+export const PLAY_PERMITTED_STATES: string[] = (() => {
+  const env = process.env.PLAY_PERMITTED_STATES;
+  if (!env) return ALL_US;
+  const list = env.split(",").map((s) => s.trim().toUpperCase()).filter((s) => /^[A-Z]{2}$/.test(s));
+  return list.length > 0 ? list : ALL_US;
+})();
+
+// Minimum age for free-to-play. Real-money mode uses the stricter MIN_AGE_YEARS.
+export const PLAY_MIN_AGE_YEARS = Number(process.env.PLAY_MIN_AGE_YEARS ?? 18);
 
 // Operator commission on each pool, in basis points. 100 bps = 1.00%.
 // Revenue comes ONLY from this — operator never takes a position, never sets a

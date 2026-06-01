@@ -2,10 +2,12 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions } from "@/db/schema";
 import { EventList, type EventListItem } from "@/components/event-list";
+import { requireOnboarded } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  await requireOnboarded();
   // Find every game that has at least one open question.
   const rows = await db
     .select({
