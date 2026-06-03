@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logout } from "@/app/(auth)/login/actions";
-import { getCurrentProfile } from "@/lib/session";
+import { getCurrentProfile, isAdmin } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { APP_NAME } from "@/lib/config";
 import { BalancePill } from "./balance-pill";
@@ -11,6 +11,7 @@ import { TopBarNav, TopBarWordmark } from "./top-bar-nav";
 export async function TopBar() {
   const profile = await getCurrentProfile();
   const wallet = profile ? await getWallet(profile.id) : null;
+  const admin = profile ? await isAdmin() : false;
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-md">
@@ -23,6 +24,7 @@ export async function TopBar() {
               <TopBarNav
                 links={[
                   { href: "/", label: "Events", exact: true },
+                  ...(admin ? [{ href: "/admin", label: "Admin" }] : []),
                 ]}
                 username={profile.username}
               />

@@ -3,80 +3,67 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
-import { games, questions, type MoneyKind, type WindowLabel } from "@/db/schema";
+import { games, questions, type WindowLabel } from "@/db/schema";
 import { settleQuestion, voidQuestion, ContestError } from "@/lib/contest";
-import { getCurrentProfileId } from "@/lib/session";
+import { getCurrentSession, requireAdmin } from "@/lib/session";
 import { logAudit } from "@/db/audit";
-import { ADMIN_PASSWORD, REAL_MONEY_ENABLED } from "@/lib/config";
+import { TEAM_NAME } from "@/lib/config";
 
-function requireAdmin(formData: FormData): void {
-  const pw = String(formData.get("admin_password") ?? "");
-  if (pw !== ADMIN_PASSWORD) redirect("/admin?error=unauthorized");
-}
-
-export async function createGame(formData: FormData) {
-  requireAdmin(formData);
-  const actor = await getCurrentProfileId();
-
-  const league = String(formData.get("league") ?? "").trim();
-  const homeTeam = String(formData.get("homeTeam") ?? "").trim();
-  const awayTeam = String(formData.get("awayTeam") ?? "").trim();
-  const startsAt = String(formData.get("startsAt") ?? "").trim();
-
-  if (!league || !homeTeam || !awayTeam || !startsAt) {
-    redirect("/admin?error=invalid_input");
-  }
-
-  const [created] = await db
-    .insert(games)
-    .values({ league, homeTeam, awayTeam, startsAt: new Date(startsAt) })
-    .returning();
-  await logAudit({
-    actorUserId: actor,
-    action: "game.create",
-    refType: "game",
-    refId: created.id,
-    payload: { league, homeTeam, awayTeam, startsAt },
-  });
-  revalidatePath("/");
-  revalidatePath("/admin");
-  redirect("/admin?ok=game_created");
-}
+// Every action is gated by requireAdmin() — emails in ADMIN_EMAILS env.
+// 404s on non-admins so the surface is undiscoverable.
 
 export async function createQuestion(formData: FormData) {
-  requireAdmin(formData);
-  const actor = await getCurrentProfileId();
+  await requireAdmin();
+  const session = await getCurrentSession();
+  const actor = session?.profile?.id ?? null;
 
-  const gameId = Number(formData.get("gameId"));
-  const statType = String(formData.get("statType") ?? "").trim();
-  const subject = String(formData.get("subject") ?? "").trim();
-  const window = String(formData.get("window") ?? "Q1") as WindowLabel;
   const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim() || null;
-  const entryFeeMinor = Math.round(Number(formData.get("entryFeeUsd") ?? 1) * 100);
-  const minEntrants = Math.max(2, Number(formData.get("minEntrants") ?? 2));
+  const window = String(formData.get("window") ?? "Q1") as WindowLabel;
+  const entryFeeUsd = Number(formData.get("entryFeeUsd") ?? 1);
   const locksAt = String(formData.get("locksAt") ?? "").trim();
-  const moneyKind = String(formData.get("moneyKind") ?? "virtual") as MoneyKind;
+  const gameIdRaw = String(formData.get("gameId") ?? "").trim();
 
-  if (!gameId || !statType || !subject || !title || !locksAt || entryFeeMinor <= 0) {
-    redirect("/admin?error=invalid_input");
-  }
-  if (moneyKind === "real" && !REAL_MONEY_ENABLED) {
-    redirect("/admin?error=real_money_disabled");
+  if (!title) redirect("/admin?error=missing_title");
+  if (!locksAt) redirect("/admin?error=missing_locks_at");
+  if (!Number.isFinite(entryFeeUsd) || entryFeeUsd <= 0)
+    redirect("/admin?error=invalid_fee");
+  if (!["Q1", "Q2", "Q3", "Q4", "OT", "GAME"].includes(window))
+    redirect("/admin?error=invalid_window");
+
+  // Resolve the game. If admin picked "new", auto-create a quick one.
+  let gameId: number;
+  if (gameIdRaw === "new") {
+    const newLeague = String(formData.get("newLeague") ?? "Custom").trim() || "Custom";
+    const newHome = String(formData.get("newHome") ?? TEAM_NAME).trim() || TEAM_NAME;
+    const newAway = String(formData.get("newAway") ?? "Opponent").trim() || "Opponent";
+    const [g] = await db
+      .insert(games)
+      .values({
+        league: newLeague,
+        homeTeam: newHome,
+        awayTeam: newAway,
+        startsAt: new Date(),
+        status: "in_progress",
+      })
+      .returning();
+    gameId = g.id;
+  } else {
+    const id = Number(gameIdRaw);
+    if (!Number.isInteger(id)) redirect("/admin?error=missing_game");
+    gameId = id;
   }
 
   const [created] = await db
     .insert(questions)
     .values({
       gameId,
-      statType,
-      subject,
+      statType: "custom",
+      subject: TEAM_NAME,
       window,
       title,
-      description,
-      entryFeeMinor,
-      moneyKind,
-      minEntrants,
+      entryFeeMinor: Math.round(entryFeeUsd * 100),
+      moneyKind: "virtual",
+      minEntrants: 2,
       locksAt: new Date(locksAt),
       createdBy: actor ?? null,
     })
@@ -87,59 +74,51 @@ export async function createQuestion(formData: FormData) {
     action: "question.create",
     refType: "question",
     refId: created.id,
-    payload: {
-      gameId, statType, subject, window, title, entryFeeMinor, moneyKind, minEntrants, locksAt,
-    },
+    payload: { title, window, entryFeeUsd, locksAt, gameId },
   });
 
   revalidatePath("/");
+  revalidatePath(`/contest/${gameId}`);
   revalidatePath("/admin");
-  redirect("/admin?ok=question_created");
+  redirect("/admin?ok=created");
 }
 
+// Settle + void stay here as exported server actions; the contest page mounts
+// them inline via admin-only widgets so /admin can stay pure question-entry.
 export async function settleQuestionAction(formData: FormData) {
-  requireAdmin(formData);
-  const actor = await getCurrentProfileId();
-
+  await requireAdmin();
+  const session = await getCurrentSession();
+  const actor = session?.profile?.id ?? undefined;
   const questionId = Number(formData.get("questionId"));
   const officialResult = Number(formData.get("officialResult"));
   if (!Number.isFinite(questionId) || !Number.isFinite(officialResult)) {
-    redirect("/admin?error=invalid_input");
+    redirect("/?error=invalid_input");
   }
-
   try {
-    // TODO(vendor): in Phase 2 the official result MUST come from a licensed
-    // sports data feed (Sportradar / Genius Sports) — not from the admin form —
-    // for any moneyKind === "real" question.
-    await settleQuestion({ questionId, officialResult, actorUserId: actor ?? undefined });
+    await settleQuestion({ questionId, officialResult, actorUserId: actor });
   } catch (e) {
-    if (e instanceof ContestError) redirect(`/admin?error=${e.code}`);
+    if (e instanceof ContestError) redirect(`/?error=${e.code}`);
     throw e;
   }
   revalidatePath("/");
-  revalidatePath("/admin");
   revalidatePath("/results");
-  revalidatePath("/leaderboard");
-  redirect("/admin?ok=settled");
 }
 
 export async function voidQuestionAction(formData: FormData) {
-  requireAdmin(formData);
-  const actor = await getCurrentProfileId();
+  await requireAdmin();
+  const session = await getCurrentSession();
+  const actor = session?.profile?.id ?? undefined;
   const questionId = Number(formData.get("questionId"));
-  if (!Number.isFinite(questionId)) redirect("/admin?error=invalid_input");
-
+  if (!Number.isFinite(questionId)) redirect("/?error=invalid_input");
   try {
     await voidQuestion({
       questionId,
-      actorUserId: actor ?? undefined,
+      actorUserId: actor,
       reason: String(formData.get("reason") ?? "manual_void"),
     });
   } catch (e) {
-    if (e instanceof ContestError) redirect(`/admin?error=${e.code}`);
+    if (e instanceof ContestError) redirect(`/?error=${e.code}`);
     throw e;
   }
   revalidatePath("/");
-  revalidatePath("/admin");
-  redirect("/admin?ok=voided");
 }

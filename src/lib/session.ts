@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { profiles } from "@/db/schema";
 import { createSupabaseServerClient } from "./supabase/server";
-import { PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "./config";
+import { ADMIN_EMAILS, PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "./config";
 
 export interface OnboardingStatus {
   emailVerified: boolean;
@@ -66,6 +66,21 @@ export async function requireSession() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
   return session;
+}
+
+// Admin gate by email. Returns true if the signed-in user's email is in
+// ADMIN_EMAILS. No session = not admin.
+export async function isAdmin(): Promise<boolean> {
+  const session = await getCurrentSession();
+  const email = session?.authUser?.email?.toLowerCase();
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email);
+}
+
+// Use on every admin page + action. 404 (not 401/redirect) on miss so the
+// route is undiscoverable to anyone who isn't on the list.
+export async function requireAdmin() {
+  if (!(await isAdmin())) notFound();
 }
 
 export function computeAgeYears(isoDob: string): number {

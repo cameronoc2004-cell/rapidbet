@@ -71,8 +71,17 @@ export const TEAM_NAME = process.env.NEXT_PUBLIC_TEAM_NAME ?? "Home Team";
 // Public origin (https://rallypot.org in prod). Used in email links + auth callbacks.
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://rallypot.org";
 
-// Admin gate (MVP). Replace with proper RBAC before Phase 2. // TODO(security)
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "letmein";
+// Admin allowlist by Supabase auth email. Lowercased + trimmed at compare time.
+// Multiple admins comma-separated. Defaults to the project owner.
+export const ADMIN_EMAILS: string[] = (process.env.ADMIN_EMAILS ?? "cameronoc2004@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+// Legacy shared-password gate. Still read so any existing admin actions that
+// haven't migrated keep working; new code should use isAdmin()/requireAdmin().
+// TODO(security): remove once the last reference is gone.
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
 
 // Helper used at every real-money entry point. Centralized so legal/eng can
 // reason about exactly which conditions must be true to handle cash.
