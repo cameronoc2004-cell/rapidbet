@@ -34,8 +34,8 @@ export function TopBarNav({ links, username }: TopBarNavProps) {
             className={
               "hidden text-xs transition-colors sm:inline " +
               (active
-                ? "font-semibold text-[var(--text)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text)]")
+                ? "font-semibold text-white"
+                : "text-[var(--text-muted)] hover:text-white")
             }
           >
             {l.label}
@@ -48,8 +48,8 @@ export function TopBarNav({ links, username }: TopBarNavProps) {
         className={
           "hidden text-xs transition-colors sm:inline " +
           (pathname === "/me"
-            ? "font-semibold text-[var(--text)]"
-            : "text-[var(--text-muted)] hover:text-[var(--text)]")
+            ? "font-semibold text-white"
+            : "text-[var(--text-muted)] hover:text-white")
         }
       >
         @{username}
@@ -69,17 +69,17 @@ export function TopBarWordmark({
   const pathname = usePathname();
   const onHome = pathname === "/";
   return (
-    <Link href="/" className="flex items-baseline gap-2">
+    <Link href="/" className="group flex items-baseline gap-2">
       <span
         className={
-          "font-display text-base font-bold tracking-tight transition-colors " +
-          (onHome ? "text-[var(--text)]" : "text-[var(--text)]")
+          "font-display text-base font-bold tracking-tight transition-colors group-hover:text-white " +
+          (onHome ? "text-white" : "text-[var(--text)]")
         }
         aria-current={onHome ? "page" : undefined}
       >
         {appName}
       </span>
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] transition-colors group-hover:text-[var(--text)]">
         {tagline}
       </span>
     </Link>

@@ -31,7 +31,7 @@ export function ContestHeader({
       <div className="flex items-center gap-2">
         <a
           href="/"
-          className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+          className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] transition-colors hover:text-white"
         >
           ← all events
         </a>

@@ -149,7 +149,7 @@ export function QuestionCard(props: QuestionCardProps) {
               <button
                 type="button"
                 onClick={() => setState("buying")}
-                className="flex-1 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] active:bg-[var(--primary-lo)]"
+                className="flex-1 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40 active:bg-[var(--primary-lo)]"
               >
                 <span className="font-mono text-base">{formatMoney(props.data.entryFeeMinor)}</span>
                 <span className="mx-2 opacity-50">·</span>
@@ -198,7 +198,7 @@ export function QuestionCard(props: QuestionCardProps) {
                     setError(null);
                     setState("active");
                   }}
-                  className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+                  className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:text-white"
                   disabled={pending}
                 >
                   Cancel
@@ -207,7 +207,7 @@ export function QuestionCard(props: QuestionCardProps) {
                   type="button"
                   onClick={onSubmit}
                   disabled={pending || predictionInput === ""}
-                  className="flex-1 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {pending ? "Submitting…" : "Submit answer"}
                 </button>
@@ -253,7 +253,7 @@ function SignInPrompt() {
   return (
     <a
       href="/login"
-      className="block rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 text-center text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--primary-lo)] hover:text-[var(--text)]"
+      className="block rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 text-center text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--primary-lo)] hover:text-white"
     >
       Sign in to enter
     </a>

@@ -116,7 +116,7 @@ export function WinOverlay({ amountMinor }: WinOverlayProps) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="mt-7 w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+              className="mt-7 w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
               autoFocus
             >
               Nice

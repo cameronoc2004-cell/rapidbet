@@ -100,7 +100,7 @@ export function LocationGate({ verifyAction }: LocationGateProps) {
           type="button"
           onClick={askForLocation}
           disabled={status === "requesting" || status === "submitting" || pending}
-          className="w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] disabled:cursor-wait disabled:opacity-70"
+          className="w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40 disabled:cursor-wait disabled:opacity-70"
         >
           {status === "requesting"
             ? "Waiting for your permission…"

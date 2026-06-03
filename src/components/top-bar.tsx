@@ -30,7 +30,7 @@ export async function TopBar() {
               <form action={logout}>
                 <button
                   type="submit"
-                  className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+                  className="text-xs text-[var(--text-muted)] transition-colors hover:text-white"
                 >
                   Sign out
                 </button>
@@ -39,7 +39,7 @@ export async function TopBar() {
           ) : (
             <Link
               href="/login"
-              className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+              className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
             >
               Sign in
             </Link>

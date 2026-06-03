@@ -89,7 +89,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       )}
 
       <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
-        <Link href="/" className="hover:text-[var(--text)] hover:underline">
+        <Link href="/" className="hover:text-white hover:underline">
           ← Back to events
         </Link>
       </p>
@@ -147,7 +147,7 @@ function VerifyEmailCard({
           <input type="hidden" name="email" value={email} />
           <button
             type="submit"
-            className="text-xs text-[var(--text-muted)] underline-offset-2 transition-colors hover:text-[var(--text)] hover:underline"
+            className="text-xs text-[var(--text-muted)] underline-offset-2 transition-colors hover:text-white hover:underline"
           >
             Didn&apos;t get it? Resend
           </button>
@@ -179,7 +179,7 @@ function Tab({
       className={`-mb-px flex-1 border-b-2 px-3 py-2 text-center text-sm font-medium transition-colors ${
         active
           ? "border-[var(--primary)] text-[var(--text)]"
-          : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+          : "border-transparent text-[var(--text-muted)] hover:text-white"
       }`}
     >
       {children}
@@ -229,7 +229,7 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
   return (
     <button
       type="submit"
-      className="w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+      className="w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
     >
       {children}
     </button>

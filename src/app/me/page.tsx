@@ -63,7 +63,7 @@ export default async function MePage() {
           </p>
           <Link
             href="/onboarding"
-            className="mt-3 inline-block rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+            className="mt-3 inline-block rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
           >
             Finish verification →
           </Link>
@@ -273,7 +273,7 @@ function VerifRow({
       ) : ctaHref ? (
         <Link
           href={ctaHref}
-          className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+          className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
         >
           {ctaLabel}
         </Link>

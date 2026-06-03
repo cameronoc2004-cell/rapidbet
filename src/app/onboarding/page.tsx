@@ -116,7 +116,7 @@ export default async function OnboardingPage({
             </p>
             <button
               type="submit"
-              className="w-full rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+              className="w-full rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
             >
               Save
             </button>
@@ -143,7 +143,7 @@ export default async function OnboardingPage({
       <div className="pt-2 text-center">
         <a
           href="/me"
-          className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] hover:underline"
+          className="text-xs text-[var(--text-muted)] hover:text-white hover:underline"
         >
           Manage profile →
         </a>
