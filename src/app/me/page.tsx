@@ -10,6 +10,7 @@ import { getWallet } from "@/db/wallet";
 import { formatMoney } from "@/lib/format";
 import { PLAY_MIN_AGE_YEARS, REAL_MONEY_ENABLED } from "@/lib/config";
 import { redirect } from "next/navigation";
+import { PushToggle } from "@/components/push-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +107,15 @@ export default async function MePage() {
             ctaHref={status.stateVerified ? null : "/onboarding"}
             ctaLabel="Choose"
           />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          Notifications
+        </h2>
+        <div className="mt-3">
+          <PushToggle />
         </div>
       </section>
 
