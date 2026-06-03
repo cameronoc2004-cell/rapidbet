@@ -26,6 +26,7 @@ import {
 import { postWalletTx } from "@/db/wallet";
 import { logAudit } from "@/db/audit";
 import { COMMISSION_RATE_BPS } from "@/lib/config";
+import { notifier } from "@/lib/services";
 
 export interface SubmitPredictionInput {
   questionId: number;
@@ -198,6 +199,9 @@ export interface SettleQuestionResult {
   winnersCount: number;
   perWinnerMinor: number;
   voided?: boolean;
+  // Populated on successful settle (not on void) so the notifier can fire.
+  winnerUserIds?: number[];
+  questionTitle?: string;
 }
 
 export async function settleQuestion(
@@ -400,6 +404,26 @@ export async function settleQuestion(
       netPoolMinor,
       winnersCount: winners.length,
       perWinnerMinor,
+      // Used by the post-commit notifier hook below.
+      winnerUserIds: winners.map((w) => w.entry.userId),
+      questionTitle: q.title,
     };
+  }).then(async (result) => {
+    // Fire notifications AFTER the transaction commits. Failures here must not
+    // roll back the settlement. Each channel handles its own errors and the
+    // notifier no-ops cleanly if Resend/FCM aren't configured.
+    if (!result.voided && result.winnerUserIds && result.perWinnerMinor > 0) {
+      const title = result.questionTitle ?? "your contest";
+      await Promise.allSettled(
+        result.winnerUserIds.map((userId) =>
+          notifier.notifyContestWon({
+            userId,
+            amountMinor: result.perWinnerMinor,
+            questionTitle: title,
+          }),
+        ),
+      );
+    }
+    return result;
   });
 }

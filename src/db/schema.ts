@@ -87,10 +87,74 @@ export const profiles = pgTable("profiles", {
   stateCode: text("state_code"),
   // Non-null = user has cleared every onboarding gate.
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
+  // Notification preferences. Defaults: email + push for wins; nothing else opt-out.
+  notifyEmail: boolean("notify_email").notNull().default(true),
+  notifyPush: boolean("notify_push").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),
 });
+
+// --------- FCM device tokens ---------
+// One row per registered device. A user typically has 1–3 (phone, tablet,
+// browser). Pruned on send-failure (InvalidRegistration / NotRegistered).
+export const deviceTokens = pgTable(
+  "device_tokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    platform: text("platform", { enum: ["web", "ios", "android"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [index("device_tokens_user_idx").on(t.userId)],
+);
+
+// --------- Payment orders (Trustly idempotency) ---------
+// Every Trustly deposit/withdrawal starts here. The Trustly order_id is the
+// idempotency key for inbound webhooks — duplicates flip to no-op.
+// orderRef holds Trustly's order id; status reflects vendor lifecycle.
+export const paymentOrderKindEnum = pgEnum("payment_order_kind", [
+  "deposit",
+  "withdrawal",
+  "refund",
+]);
+export const paymentOrderStatusEnum = pgEnum("payment_order_status", [
+  "pending",
+  "confirmed",
+  "failed",
+  "cancelled",
+]);
+export const paymentOrders = pgTable(
+  "payment_orders",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    vendor: text("vendor").notNull(),       // "trustly"
+    vendorOrderId: text("vendor_order_id").notNull().unique(),
+    kind: paymentOrderKindEnum("kind").notNull(),
+    amountMinor: bigint("amount_minor", { mode: "number" }).notNull(),
+    status: paymentOrderStatusEnum("status").notNull().default("pending"),
+    // Last full webhook payload — useful for support + reconciliation.
+    lastPayload: jsonb("last_payload"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [index("payment_orders_user_idx").on(t.userId, t.createdAt)],
+);
 
 // --------- Wallet (single row per user) ---------
 // virtualBalanceMinor: free-to-play; spends in Phase 1.
