@@ -42,11 +42,21 @@ export function AdminQuestionRow(props: AdminQuestionRowProps) {
           <div className="min-w-0">
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
               #{props.id} · {props.window} · {statusLabel(props.status)}
-              {props.entryCount > 0 && ` · ${props.entryCount} entr${props.entryCount === 1 ? "y" : "ies"}`}
             </div>
             <div className="mt-1 truncate text-sm text-[var(--text)]">{props.title}</div>
-            <div className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
-              ${(props.entryFeeMinor / 100).toFixed(2)} · locks {new Date(props.locksAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-3 font-mono text-[11px] text-[var(--text-muted)]">
+              <span className="text-[var(--primary)]">
+                pot ${((props.entryCount * props.entryFeeMinor) / 100).toFixed(2)}
+              </span>
+              <span>
+                {props.entryCount} player{props.entryCount === 1 ? "" : "s"}
+              </span>
+              <span>
+                ${(props.entryFeeMinor / 100).toFixed(2)} buy-in
+              </span>
+              <span>
+                locks {new Date(props.locksAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+              </span>
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">

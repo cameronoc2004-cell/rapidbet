@@ -15,6 +15,9 @@ export interface QuestionCardData {
   window: string;
   entryFeeMinor: number;
   locksAt: string;            // ISO
+  // Snapshot at page load — total pot in minor units and # of entrants.
+  potMinor: number;
+  entrantCount: number;
   // If the user already has an entry on this question, prefill C state.
   myPrediction: number | null;
 }
@@ -121,6 +124,32 @@ export function QuestionCard(props: QuestionCardProps) {
               if (state === "active") setState("expired");
             }}
           />
+        </div>
+      </div>
+
+      {/* Pot + players strip — the headline numbers for this contest */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-lg border border-[var(--primary-lo)]/40 bg-[var(--primary-lo)]/10 px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--primary)]">
+            Pot
+          </div>
+          <div
+            className="mt-0.5 font-mono text-xl font-semibold text-[var(--primary)]"
+            data-tabular="true"
+          >
+            {formatMoney(props.data.potMinor)}
+          </div>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Players in
+          </div>
+          <div
+            className="mt-0.5 font-mono text-xl font-semibold text-[var(--text)]"
+            data-tabular="true"
+          >
+            {props.data.entrantCount}
+          </div>
         </div>
       </div>
 

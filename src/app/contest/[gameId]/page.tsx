@@ -67,6 +67,23 @@ export default async function ContestPage({ params, searchParams }: PageProps) {
     .where(eq(questions.gameId, gameId))
     .orderBy(asc(questions.locksAt));
 
+  // Pot + entrant snapshot per question.
+  const aggregates = qList.length > 0
+    ? new Map(
+        (
+          await db
+            .select({
+              questionId: entries.questionId,
+              entrantCount: sql<number>`count(*)::int`,
+              potMinor: sql<number>`coalesce(sum(${entries.feePaidMinor}), 0)::bigint`,
+            })
+            .from(entries)
+            .where(inArray(entries.questionId, qList.map((q) => q.id)))
+            .groupBy(entries.questionId)
+        ).map((r) => [r.questionId, { entrantCount: r.entrantCount, potMinor: Number(r.potMinor) }]),
+      )
+    : new Map<number, { entrantCount: number; potMinor: number }>();
+
   const allMyEntries = await db
     .select()
     .from(entries)
@@ -112,6 +129,8 @@ export default async function ContestPage({ params, searchParams }: PageProps) {
         window: featured.window,
         entryFeeMinor: featured.entryFeeMinor,
         locksAt: featured.locksAt.toISOString(),
+        potMinor: aggregates.get(featured.id)?.potMinor ?? 0,
+        entrantCount: aggregates.get(featured.id)?.entrantCount ?? 0,
         myPrediction: myEntryByQ.get(featured.id)?.predictionValue ?? null,
       }
     : null;
