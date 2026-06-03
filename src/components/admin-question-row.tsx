@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { deleteQuestion, updateQuestion } from "@/app/admin/actions";
+import {
+  deleteQuestion,
+  settleQuestionAction,
+  updateQuestion,
+  voidQuestionAction,
+} from "@/app/admin/actions";
 
 export interface AdminQuestionRowProps {
   id: number;
@@ -12,6 +17,7 @@ export interface AdminQuestionRowProps {
   entryFeeMinor: number;
   locksAt: string;            // ISO
   hasEntries: boolean;
+  entryCount: number;
 }
 
 function toLocalInput(iso: string): string {
@@ -31,11 +37,12 @@ export function AdminQuestionRow(props: AdminQuestionRowProps) {
   return (
     <li className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
       {mode === "view" && (
+        <>
         <div className="flex items-start justify-between gap-3 p-3">
           <div className="min-w-0">
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
               #{props.id} · {props.window} · {statusLabel(props.status)}
-              {props.hasEntries && " · has entries"}
+              {props.entryCount > 0 && ` · ${props.entryCount} entr${props.entryCount === 1 ? "y" : "ies"}`}
             </div>
             <div className="mt-1 truncate text-sm text-[var(--text)]">{props.title}</div>
             <div className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
@@ -63,6 +70,48 @@ export function AdminQuestionRow(props: AdminQuestionRowProps) {
             )}
           </div>
         </div>
+
+        {/* Inline Settle + Void — visible whenever the question is still
+            unsettled. Settle takes the official numeric result; Void cancels
+            and refunds every entry, with an optional reason logged to audit. */}
+        {props.status === "open" && (
+          <div className="grid gap-2 border-t border-[var(--border)] p-3 sm:grid-cols-2">
+            <form action={settleQuestionAction} className="flex items-end gap-2">
+              <input type="hidden" name="questionId" value={props.id} />
+              <label className="flex-1">
+                <span className="block text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Official result
+                </span>
+                <input
+                  name="officialResult"
+                  type="number"
+                  step="0.5"
+                  required
+                  inputMode="decimal"
+                  className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
+                />
+              </label>
+              <SettleButton />
+            </form>
+
+            <form action={voidQuestionAction} className="flex items-end gap-2">
+              <input type="hidden" name="questionId" value={props.id} />
+              <label className="flex-1">
+                <span className="block text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Void reason (optional)
+                </span>
+                <input
+                  name="reason"
+                  type="text"
+                  placeholder="e.g. game cancelled"
+                  className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
+                />
+              </label>
+              <VoidButton />
+            </form>
+          </div>
+        )}
+        </>
       )}
 
       {mode === "confirmDelete" && (
@@ -190,6 +239,32 @@ function SaveButton() {
       className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {pending ? "Saving…" : "Save"}
+    </button>
+  );
+}
+
+function SettleButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "Settling…" : "Settle"}
+    </button>
+  );
+}
+
+function VoidButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-colors hover:border-[var(--danger)]/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "Voiding…" : "Void"}
     </button>
   );
 }

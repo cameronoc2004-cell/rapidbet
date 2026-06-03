@@ -2,14 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions, settlements } from "@/db/schema";
-import { isAdmin, requireOnboarded } from "@/lib/session";
+import { requireOnboarded } from "@/lib/session";
 import { submitPrediction, ContestError } from "@/lib/contest";
 import { InsufficientFundsError } from "@/db/wallet";
 import { revalidatePath } from "next/cache";
 import { ContestHeader } from "@/components/contest-header";
 import { QuestionCard, type QuestionCardData } from "@/components/question-card";
 import { WinOverlay } from "@/components/win-overlay";
-import { AdminQuestionControls } from "@/components/admin-question-controls";
 import { formatMoney } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +51,6 @@ function humanize(code: string): string {
 export default async function ContestPage({ params, searchParams }: PageProps) {
   const session = await requireOnboarded();
   const userId = session.profile!.id;
-  const viewerIsAdmin = await isAdmin();
 
   const { gameId: gameIdRaw } = await params;
   const { celebrate } = await searchParams;
@@ -165,15 +163,7 @@ export default async function ContestPage({ params, searchParams }: PageProps) {
 
       {/* The one active card */}
       {card ? (
-        <div>
-          <QuestionCard data={card} submitAction={submitAction} signedIn={true} />
-          {viewerIsAdmin && featured && (
-            <AdminQuestionControls
-              questionId={featured.id}
-              status={featured.status as "open" | "locked" | "voided" | "settled"}
-            />
-          )}
-        </div>
+        <QuestionCard data={card} submitAction={submitAction} signedIn={true} />
       ) : (
         <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)]/60 px-6 py-12 text-center">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">

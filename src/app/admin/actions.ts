@@ -102,8 +102,8 @@ export async function createQuestion(formData: FormData) {
   redirect("/admin?ok=created");
 }
 
-// Settle + void stay here as exported server actions; the contest page mounts
-// them inline via admin-only widgets so /admin can stay pure question-entry.
+// Settle + void are exported server actions called from inline forms on /admin.
+// The contest pages stay user-only.
 export async function settleQuestionAction(formData: FormData) {
   await requireAdmin();
   const session = await getCurrentSession();
@@ -111,16 +111,18 @@ export async function settleQuestionAction(formData: FormData) {
   const questionId = Number(formData.get("questionId"));
   const officialResult = Number(formData.get("officialResult"));
   if (!Number.isFinite(questionId) || !Number.isFinite(officialResult)) {
-    redirect("/?error=invalid_input");
+    redirect("/admin?error=invalid_input");
   }
   try {
     await settleQuestion({ questionId, officialResult, actorUserId: actor });
   } catch (e) {
-    if (e instanceof ContestError) redirect(`/?error=${e.code}`);
+    if (e instanceof ContestError) redirect(`/admin?error=${e.code}`);
     throw e;
   }
   revalidatePath("/");
   revalidatePath("/results");
+  revalidatePath("/admin");
+  redirect("/admin?ok=settled");
 }
 
 // Delete a question. Cascade FKs clean up entries / settlements / skill_scores.
@@ -207,7 +209,7 @@ export async function voidQuestionAction(formData: FormData) {
   const session = await getCurrentSession();
   const actor = session?.profile?.id ?? undefined;
   const questionId = Number(formData.get("questionId"));
-  if (!Number.isFinite(questionId)) redirect("/?error=invalid_input");
+  if (!Number.isFinite(questionId)) redirect("/admin?error=invalid_input");
   try {
     await voidQuestion({
       questionId,
@@ -215,8 +217,10 @@ export async function voidQuestionAction(formData: FormData) {
       reason: String(formData.get("reason") ?? "manual_void"),
     });
   } catch (e) {
-    if (e instanceof ContestError) redirect(`/?error=${e.code}`);
+    if (e instanceof ContestError) redirect(`/admin?error=${e.code}`);
     throw e;
   }
   revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?ok=voided");
 }

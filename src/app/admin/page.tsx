@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql, asc } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions } from "@/db/schema";
 import { requireAdmin } from "@/lib/session";
@@ -10,6 +10,8 @@ const OK: Record<string, string> = {
   created: "Question posted.",
   updated: "Question updated.",
   deleted: "Question deleted.",
+  settled: "Question settled — winners paid.",
+  voided: "Question voided — all entries refunded.",
 };
 const ERR: Record<string, string> = {
   missing_title: "Question can't be empty.",
@@ -36,13 +38,15 @@ export default async function AdminPage({
 
   const existingGames = await db.select().from(games).orderBy(desc(games.startsAt));
 
-  // Recent admin-created questions for the inline edit/delete rail.
-  const recent = await db
+  // Active + planned questions — anything not yet settled or voided.
+  // Sorted by soonest lock first so the next-to-resolve sits at the top.
+  const active = await db
     .select()
     .from(questions)
-    .orderBy(desc(questions.createdAt))
-    .limit(15);
-  const entrantsByQ = recent.length > 0
+    .where(eq(questions.status, "open"))
+    .orderBy(questions.locksAt)
+    .limit(30);
+  const entrantsByQ = active.length > 0
     ? new Map(
         (
           await db
@@ -51,7 +55,7 @@ export default async function AdminPage({
               n: sql<number>`count(*)::int`,
             })
             .from(entries)
-            .where(inArray(entries.questionId, recent.map((r) => r.id)))
+            .where(inArray(entries.questionId, active.map((r) => r.id)))
             .groupBy(entries.questionId)
         ).map((r) => [r.questionId, r.n]),
       )
@@ -188,14 +192,18 @@ export default async function AdminPage({
         <AdminSubmitButton>Post question</AdminSubmitButton>
       </form>
 
-      {/* Recent questions: inline edit + delete */}
-      {recent.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Recent
-          </h2>
+      {/* Active + planned questions: inline settle, void, edit, delete */}
+      <section className="space-y-3">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          Active &amp; planned
+        </h2>
+        {active.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface)]/60 px-4 py-6 text-center text-sm text-[var(--text-muted)]">
+            Nothing active. Post one above.
+          </p>
+        ) : (
           <ul className="space-y-2">
-            {recent.map((q) => (
+            {active.map((q) => (
               <AdminQuestionRow
                 key={q.id}
                 id={q.id}
@@ -205,15 +213,12 @@ export default async function AdminPage({
                 entryFeeMinor={q.entryFeeMinor}
                 locksAt={q.locksAt.toISOString()}
                 hasEntries={(entrantsByQ.get(q.id) ?? 0) > 0}
+                entryCount={entrantsByQ.get(q.id) ?? 0}
               />
             ))}
           </ul>
-        </section>
-      )}
-
-      <p className="pt-2 text-center text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-        Settle &amp; void live on each contest page (admin-only buttons).
-      </p>
+        )}
+      </section>
     </div>
   );
 }
