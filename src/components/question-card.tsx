@@ -185,8 +185,7 @@ export function QuestionCard(props: QuestionCardProps) {
                 className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 font-mono text-3xl font-semibold text-[var(--text)] outline-none focus:border-[var(--primary)]"
               />
               <p className="mt-2 text-xs text-[var(--text-muted)]">
-                Closest answer wins the pool. Operator takes 1% commission;
-                ties split the rest evenly.
+                Closest answer wins the pool. Ties split the pool evenly.
               </p>
               {error && (
                 <p className="mt-2 text-xs text-[var(--danger)]">{error}</p>

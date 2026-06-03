@@ -47,10 +47,9 @@ export default async function ResultsPage() {
             </div>
             <h2 className="mt-1 text-lg font-semibold">{q.title}</h2>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <Stat label="Official" value={String(s.officialResult)} />
               <Stat label="Pool" value={`$${(s.grossPoolMinor / 100).toFixed(2)}`} />
-              <Stat label="Commission" value={`$${(s.commissionMinor / 100).toFixed(2)}`} />
               <Stat
                 label={`Per winner × ${s.winnersCount}`}
                 value={`$${(s.perWinnerMinor / 100).toFixed(2)}`}
