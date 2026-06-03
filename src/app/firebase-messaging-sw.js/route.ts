@@ -32,7 +32,7 @@ const messaging = firebase.messaging();
 // Background message handler. When the page is closed or backgrounded, FCM
 // delivers the payload here; we show a native notification.
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || "Rapid Bet";
+  const title = (payload.notification && payload.notification.title) || "Rallypot";
   const body  = (payload.notification && payload.notification.body)  || "";
   const url   = (payload.data && payload.data.url) || "/";
   self.registration.showNotification(title, {

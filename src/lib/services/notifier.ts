@@ -32,7 +32,7 @@ async function emailFor(userId: number): Promise<string | null> {
 }
 
 function appUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://rapidbet-six.vercel.app";
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://rallypot.org";
   return `${base}${path}`;
 }
 

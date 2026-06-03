@@ -22,8 +22,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rapid Bet — Skill Contests",
+  title: "Rallypot — Skill Contests",
   description: "Per-quarter prediction contests. Closest answer wins the pool.",
+  metadataBase: new URL("https://rallypot.org"),
 };
 
 export default function RootLayout({

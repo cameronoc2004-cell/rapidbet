@@ -66,8 +66,10 @@ export const STARTER_VIRTUAL_BALANCE_MINOR = Number(
 export const MIN_AGE_YEARS = Number(process.env.MIN_AGE_YEARS ?? 21);
 
 // Branding (safe to expose to browser via NEXT_PUBLIC_).
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Rapid Bet";
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Rallypot";
 export const TEAM_NAME = process.env.NEXT_PUBLIC_TEAM_NAME ?? "Home Team";
+// Public origin (https://rallypot.org in prod). Used in email links + auth callbacks.
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://rallypot.org";
 
 // Admin gate (MVP). Replace with proper RBAC before Phase 2. // TODO(security)
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "letmein";

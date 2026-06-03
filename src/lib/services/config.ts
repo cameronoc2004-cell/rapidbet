@@ -8,7 +8,7 @@
 export const services = {
   resend: {
     apiKey: process.env.RESEND_API_KEY ?? "",
-    fromAddress: process.env.RESEND_FROM ?? "Rapid Bet <onboarding@resend.dev>",
+    fromAddress: process.env.RESEND_FROM ?? "Rallypot <onboarding@resend.dev>",
     // Resend's signing secret for the bounce/complaint webhook.
     webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? "",
   },

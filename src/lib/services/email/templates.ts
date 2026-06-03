@@ -27,11 +27,11 @@ function shell(body: string): string {
     <tr><td align="center" style="padding:40px 20px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:${COLORS.surface};border:1px solid ${COLORS.border};border-radius:12px;">
         <tr><td style="padding:32px;">
-          <div style="font-family:'Space Grotesk',Inter,Arial,sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.01em;color:${COLORS.text};">Rapid Bet</div>
+          <div style="font-family:'Space Grotesk',Inter,Arial,sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.01em;color:${COLORS.text};">Rallypot</div>
           <div style="margin-top:6px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.muted};">Skill contests</div>
           <div style="margin-top:24px;color:${COLORS.text};font-size:15px;line-height:1.55;">${body}</div>
           <div style="margin-top:32px;padding-top:20px;border-top:1px solid ${COLORS.border};font-size:11px;color:${COLORS.muted};">
-            Rapid Bet · Free-to-play. Replies to this address are not monitored.
+            Rallypot · Free-to-play. Replies to this address are not monitored.
           </div>
         </td></tr>
       </table>
@@ -56,7 +56,7 @@ export function buildEmail(
         `<p style="margin-top:20px;">${btn("Verify email", url)}</p>` +
         `<p style="font-size:12px;color:${COLORS.muted};margin-top:24px;">If you didn't sign up, you can ignore this.</p>`;
       return {
-        subject: "Verify your email · Rapid Bet",
+        subject: "Verify your email · Rallypot",
         html: shell(body),
         text: `Verify your email: ${url}`,
       };
@@ -68,7 +68,7 @@ export function buildEmail(
         `<p style="margin-top:20px;">${btn("Reset password", url)}</p>` +
         `<p style="font-size:12px;color:${COLORS.muted};margin-top:24px;">The link expires in 30 minutes.</p>`;
       return {
-        subject: "Reset your password · Rapid Bet",
+        subject: "Reset your password · Rallypot",
         html: shell(body),
         text: `Reset your password: ${url}`,
       };
@@ -77,7 +77,7 @@ export function buildEmail(
       const amount = formatMoney(Number(data.amountMinor ?? 0));
       const body =
         `<p>Your deposit of <strong>${amount}</strong> is confirmed and ready to play.</p>` +
-        `<p style="margin-top:20px;">${btn("Open Rapid Bet", String(data.url ?? "https://rapidbet-six.vercel.app"))}</p>`;
+        `<p style="margin-top:20px;">${btn("Open Rallypot", String(data.url ?? "https://rallypot.org"))}</p>`;
       return {
         subject: `Deposit confirmed: ${amount}`,
         html: shell(body),
@@ -111,9 +111,9 @@ export function buildEmail(
         `<div style="font-family:'Space Grotesk',Inter,Arial,sans-serif;font-size:22px;font-weight:700;">You won!</div>` +
         `<div style="margin-top:6px;font-family:'Space Grotesk',Inter,Arial,sans-serif;font-size:36px;font-weight:700;color:${COLORS.primary};letter-spacing:-0.02em;">${amount}</div>` +
         `<p style="margin-top:20px;">Your closest answer took the pool for <em>${title}</em>.</p>` +
-        `<p style="margin-top:20px;">${btn("See results", String(data.url ?? "https://rapidbet-six.vercel.app"))}</p>`;
+        `<p style="margin-top:20px;">${btn("See results", String(data.url ?? "https://rallypot.org"))}</p>`;
       return {
-        subject: `You won ${amount} · Rapid Bet`,
+        subject: `You won ${amount} · Rallypot`,
         html: shell(body),
         text: `You won ${amount} on ${title}.`,
       };
