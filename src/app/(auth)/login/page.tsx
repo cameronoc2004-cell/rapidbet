@@ -101,6 +101,12 @@ export default async function LoginPage({ searchParams }: PageProps) {
           ← Back to events
         </Link>
       </p>
+
+      <p className="mt-3 flex justify-center gap-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        <Link href="/terms" className="hover:text-white">Terms</Link>
+        <span>·</span>
+        <Link href="/privacy" className="hover:text-white">Privacy</Link>
+      </p>
     </div>
   );
 }

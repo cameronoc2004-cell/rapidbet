@@ -48,6 +48,13 @@ self.addEventListener("notificationclick", (event) => {
   const url = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(clients.openWindow(url));
 });
+
+// PWA installability needs a service worker that handles install + fetch.
+// We don't actually want to cache anything (Next handles HTTP caching well),
+// but the events must exist for the install prompt to fire.
+self.addEventListener("install", (event) => { self.skipWaiting(); });
+self.addEventListener("activate", (event) => { event.waitUntil(self.clients.claim()); });
+self.addEventListener("fetch", (event) => { /* pass through */ });
 `.trim();
 
   return new NextResponse(sw, {
