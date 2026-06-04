@@ -11,10 +11,21 @@ import { formatMoney } from "@/lib/format";
 import { PLAY_MIN_AGE_YEARS, REAL_MONEY_ENABLED } from "@/lib/config";
 import { redirect } from "next/navigation";
 import { PushToggle } from "@/components/push-toggle";
+import { NotificationPrefs } from "@/components/notification-prefs";
+
+const OK_BANNERS: Record<string, string> = {
+  password_updated: "Password updated.",
+  notif_prefs: "Notification preferences saved.",
+};
 
 export const dynamic = "force-dynamic";
 
-export default async function MePage() {
+export default async function MePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string }>;
+}) {
+  const { ok } = await searchParams;
   const session = await getCurrentSession();
   if (!session) redirect("/login");
   if (!session.profile) redirect("/login");
@@ -53,6 +64,12 @@ export default async function MePage() {
           {session.authUser.email}
         </p>
       </header>
+
+      {ok && OK_BANNERS[ok] && (
+        <p className="rounded-md border border-[var(--primary-lo)]/40 bg-[var(--primary-lo)]/10 px-3 py-2 text-sm text-[var(--primary)]">
+          {OK_BANNERS[ok]}
+        </p>
+      )}
 
       {!status.complete && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
@@ -114,8 +131,32 @@ export default async function MePage() {
         <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
           Notifications
         </h2>
-        <div className="mt-3">
+        <div className="mt-3 space-y-3">
+          <NotificationPrefs
+            notifyEmail={session.profile.notifyEmail ?? true}
+            notifyPush={session.profile.notifyPush ?? true}
+          />
           <PushToggle />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          Account
+        </h2>
+        <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+          <div className="font-display text-base font-semibold text-[var(--text)]">
+            Password
+          </div>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            Change your password by email.
+          </p>
+          <Link
+            href="/forgot-password"
+            className="mt-3 inline-block rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)] hover:text-white"
+          >
+            Send reset link
+          </Link>
         </div>
       </section>
 

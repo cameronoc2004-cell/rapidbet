@@ -82,6 +82,14 @@ export default async function LoginPage({ searchParams }: PageProps) {
                 <Field label="Password" name="password" type="password" required />
                 {error && ERRORS[error] && <ErrorBanner text={ERRORS[error]} />}
                 <SubmitButton>Sign in</SubmitButton>
+                <p className="pt-1 text-right text-xs">
+                  <Link
+                    href="/forgot-password"
+                    className="text-[var(--text-muted)] hover:text-white hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </p>
               </form>
             )}
           </div>
