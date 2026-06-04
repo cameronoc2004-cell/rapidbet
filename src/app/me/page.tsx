@@ -5,6 +5,7 @@ import { ledgerEntries, skillScores } from "@/db/schema";
 import {
   getCurrentSession,
   getOnboardingStatus,
+  isAdmin,
 } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { formatMoney } from "@/lib/format";
@@ -12,6 +13,7 @@ import { PLAY_MIN_AGE_YEARS, REAL_MONEY_ENABLED } from "@/lib/config";
 import { redirect } from "next/navigation";
 import { PushToggle } from "@/components/push-toggle";
 import { NotificationPrefs } from "@/components/notification-prefs";
+import { logout } from "@/app/(auth)/login/actions";
 
 const OK_BANNERS: Record<string, string> = {
   password_updated: "Password updated.",
@@ -31,6 +33,7 @@ export default async function MePage({
   if (!session.profile) redirect("/login");
 
   const status = getOnboardingStatus(session);
+  const admin = await isAdmin();
   const { virtualMinor, realMinor } = await getWallet(session.profile.id);
 
   const ledger = await db
@@ -144,19 +147,47 @@ export default async function MePage({
         <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
           Account
         </h2>
-        <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-          <div className="font-display text-base font-semibold text-[var(--text)]">
-            Password
+        <div className="mt-3 space-y-2">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+            <div className="font-display text-base font-semibold text-[var(--text)]">
+              Password
+            </div>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
+              Change your password by email.
+            </p>
+            <Link
+              href="/forgot-password"
+              className="mt-3 inline-block rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)] hover:text-white"
+            >
+              Send reset link
+            </Link>
           </div>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Change your password by email.
-          </p>
-          <Link
-            href="/forgot-password"
-            className="mt-3 inline-block rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)] hover:text-white"
-          >
-            Send reset link
-          </Link>
+
+          {admin && (
+            <Link
+              href="/admin"
+              className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--primary-lo)]"
+            >
+              <div>
+                <div className="font-display text-base font-semibold text-[var(--text)]">
+                  Admin
+                </div>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
+                  Post questions, settle, void.
+                </p>
+              </div>
+              <span className="text-[var(--text-muted)]">→</span>
+            </Link>
+          )}
+
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-left text-base font-semibold text-[var(--danger)] transition-colors hover:border-[var(--danger)]/60"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </section>
 
@@ -272,6 +303,12 @@ export default async function MePage({
           </div>
         )}
       </section>
+
+      <div className="flex justify-center gap-4 pt-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        <Link href="/terms" className="hover:text-white">Terms</Link>
+        <span>·</span>
+        <Link href="/privacy" className="hover:text-white">Privacy</Link>
+      </div>
     </div>
   );
 }
