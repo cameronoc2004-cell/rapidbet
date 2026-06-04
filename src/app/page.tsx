@@ -2,6 +2,7 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions } from "@/db/schema";
 import { EventList, type EventListItem } from "@/components/event-list";
+import { RefreshButton } from "@/components/refresh-button";
 import { requireOnboarded } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -55,13 +56,16 @@ export default async function Home() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--text)]">
-          Active events
-        </h1>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">
-          One numeric prediction per question. Closest answer wins the pool.
-        </p>
+      <section className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--text)]">
+            Active events
+          </h1>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            One numeric prediction per question. Closest answer wins the pool.
+          </p>
+        </div>
+        <RefreshButton label="Refresh events" />
       </section>
 
       <EventList items={items} />
