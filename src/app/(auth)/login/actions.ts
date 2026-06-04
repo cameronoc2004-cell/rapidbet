@@ -14,6 +14,28 @@ function field(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+// Deterministic but collision-safe: take the email local part, strip
+// non-allowed chars, pad to 3 chars if needed, then suffix _2, _3, … if taken.
+async function deriveUniqueUsername(email: string): Promise<string> {
+  const base = (email.split("@")[0] ?? "user")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 17) || "user";
+  const padded = base.length < 3 ? (base + "user").slice(0, 6) : base;
+  let candidate = padded;
+  for (let n = 2; n < 1000; n++) {
+    const taken = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.username, candidate))
+      .limit(1);
+    if (taken.length === 0) return candidate;
+    candidate = `${padded.slice(0, 17)}_${n}`;
+  }
+  // Fallback: random suffix.
+  return `${padded}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
 // Build the absolute URL we want Supabase to send the user back to after they
 // click the confirmation link. Includes /auth/callback?next=/onboarding so the
 // route handler exchanges the code and routes them into the gates flow.
@@ -28,26 +50,26 @@ async function emailCallbackUrl(): Promise<string> {
 export async function signUp(formData: FormData) {
   const email = field(formData, "email").toLowerCase();
   const password = field(formData, "password");
-  const username = field(formData, "username").toLowerCase();
+  const confirmPassword = field(formData, "confirmPassword");
+  // Required: checkbox must be checked. Browsers only send "on" when checked.
+  const termsAccepted = formData.get("acceptTerms") === "on";
 
-  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-    redirect("/login?mode=signup&error=invalid_username");
-  }
-  if (password.length < 8) {
-    redirect("/login?mode=signup&error=weak_password");
+  if (!termsAccepted) {
+    redirect("/login?mode=signup&error=terms_required");
   }
   if (!email.includes("@")) {
     redirect("/login?mode=signup&error=invalid_email");
   }
-
-  const taken = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.username, username))
-    .limit(1);
-  if (taken.length > 0) {
-    redirect("/login?mode=signup&error=username_taken");
+  if (password.length < 8) {
+    redirect("/login?mode=signup&error=weak_password");
   }
+  if (password !== confirmPassword) {
+    redirect("/login?mode=signup&error=password_mismatch");
+  }
+
+  // Auto-derive a username from the email's local part. Strip non-allowed
+  // chars; if collision, suffix -2, -3, etc. Users never see this is auto.
+  const username = await deriveUniqueUsername(email);
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
@@ -80,7 +102,11 @@ export async function signUp(formData: FormData) {
 
     const [created] = await tx
       .insert(profiles)
-      .values({ authUserId: data.user!.id, username })
+      .values({
+        authUserId: data.user!.id,
+        username,
+        termsAcceptedAt: new Date(),
+      })
       .returning();
     await tx.insert(wallets).values({ userId: created.id });
     if (STARTER_VIRTUAL_BALANCE_MINOR > 0) {

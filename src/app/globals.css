@@ -123,3 +123,40 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* =============================================================================
+   iOS / WKWebView polish — applies in Safari (PWA) and Capacitor shell.
+   ============================================================================= */
+
+/* Remove the blue/gray flash overlay iOS draws on tap. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Disable iOS long-press callout (the "Copy / Share" balloon) on UI chrome. */
+button, a, label, [role="button"] {
+  -webkit-touch-callout: none;
+}
+
+/* Prevent accidental text selection on interactive UI chrome. Body text
+   keeps default selection. */
+button, a, label, nav, header, footer, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Inertial scrolling on overflow regions. */
+html, body, * {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Inputs inherit the body font size to avoid iOS auto-zoom on focus
+   (Safari zooms on inputs < 16px). */
+input, select, textarea {
+  font-size: 16px;
+}
+
+/* Safe-area helpers — primarily for the footer; TopBar gets its own. */
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}

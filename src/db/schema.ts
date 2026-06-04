@@ -90,6 +90,9 @@ export const profiles = pgTable("profiles", {
   // Notification preferences. Defaults: email + push for wins; nothing else opt-out.
   notifyEmail: boolean("notify_email").notNull().default(true),
   notifyPush: boolean("notify_push").notNull().default(true),
+  // Timestamp when user accepted Terms of Service + Privacy Policy at signup.
+  // Required before account creation completes; logged for legal evidence.
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),

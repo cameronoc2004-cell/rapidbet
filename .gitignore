@@ -45,3 +45,15 @@ data.db-wal
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor / iOS — keep the project itself, ignore build artifacts.
+ios/App/build
+ios/App/Pods
+ios/App/Podfile.lock
+ios/App/App/public
+ios/App/App/capacitor.config.json
+ios/DerivedData
+ios/.gradle
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/

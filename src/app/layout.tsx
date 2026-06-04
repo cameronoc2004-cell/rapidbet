@@ -60,7 +60,7 @@ export default function RootLayout({
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
           {children}
         </main>
-        <footer className="border-t border-[var(--border)]">
+        <footer className="border-t border-[var(--border)] safe-bottom">
           <div className="mx-auto flex max-w-3xl items-center justify-center gap-4 px-4 py-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
             <Link href="/terms" className="hover:text-white">Terms</Link>
             <span>·</span>

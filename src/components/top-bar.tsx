@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { logout } from "@/app/(auth)/login/actions";
 import { getCurrentProfile, isAdmin } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
@@ -14,7 +13,11 @@ export async function TopBar() {
   const admin = profile ? await isAdmin() : false;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-md">
+    <header
+      // pt-[safe-area-inset-top]: pads under the iOS notch when running as PWA / Capacitor
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-md"
+    >
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
         <TopBarWordmark appName={APP_NAME} tagline="skill contests" />
 
@@ -38,14 +41,7 @@ export async function TopBar() {
                 </button>
               </form>
             </>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
-            >
-              Sign in
-            </Link>
-          )}
+          ) : null}
         </nav>
       </div>
     </header>

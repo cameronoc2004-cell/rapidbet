@@ -6,14 +6,14 @@ import { APP_NAME } from "@/lib/config";
 
 const ERRORS: Record<string, string> = {
   bad_credentials: "Incorrect email or password.",
-  invalid_username: "Username must be 3–20 chars: a–z, 0–9, underscore.",
   weak_password: "Password must be at least 8 characters.",
+  password_mismatch: "Passwords don't match.",
   invalid_email: "Please enter a valid email.",
-  username_taken: "That username is already taken.",
   email_taken: "An account with that email already exists.",
   signup_failed: "Couldn't sign you up. Try again.",
   verify_failed: "That confirmation link is expired or already used.",
   missing_code: "Confirmation link was missing its code.",
+  terms_required: "You must agree to the Terms of Service and Privacy Policy.",
 };
 
 interface PageProps {
@@ -61,20 +61,42 @@ export default async function LoginPage({ searchParams }: PageProps) {
               <form action={signUp} className="space-y-3">
                 <Field label="Email" name="email" type="email" required />
                 <Field
-                  label="Username"
-                  name="username"
-                  placeholder="3–20 chars · a–z 0–9 _"
-                  required
-                />
-                <Field
                   label="Password"
                   name="password"
                   type="password"
                   placeholder="At least 8 characters"
                   required
                 />
+                <Field
+                  label="Confirm password"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                />
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 transition-colors hover:border-[var(--primary-lo)]/60">
+                  <input
+                    type="checkbox"
+                    name="acceptTerms"
+                    required
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                  />
+                  <span className="text-xs leading-relaxed text-[var(--text-muted)]">
+                    I am 18+ and I agree to the{" "}
+                    <Link href="/terms" className="text-[var(--primary)] hover:underline">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="text-[var(--primary)] hover:underline">
+                      Privacy Policy
+                    </Link>
+                    .
+                  </span>
+                </label>
                 {error && ERRORS[error] && <ErrorBanner text={ERRORS[error]} />}
                 <SubmitButton>Create account</SubmitButton>
+                <p className="pt-2 text-center text-[11px] text-[var(--text-muted)]">
+                  We&apos;ll send a verification link to your email.
+                </p>
               </form>
             ) : (
               <form action={signIn} className="space-y-3">
@@ -96,13 +118,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
         </>
       )}
 
-      <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
-        <Link href="/" className="hover:text-white hover:underline">
-          ← Back to events
-        </Link>
-      </p>
-
-      <p className="mt-3 flex justify-center gap-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+      <p className="mt-6 flex justify-center gap-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
         <Link href="/terms" className="hover:text-white">Terms</Link>
         <span>·</span>
         <Link href="/privacy" className="hover:text-white">Privacy</Link>
