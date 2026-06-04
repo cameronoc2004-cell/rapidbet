@@ -78,7 +78,13 @@ export default async function ActivePicksPage() {
         <ul className="space-y-3">
           {rows.map(({ entry, question, game }) => {
             const agg = pots.get(question.id);
-            const isOpen = question.status === "open";
+            const nowMs = Date.now();
+            const lockMs = question.locksAt.getTime();
+            // status==open AND lock time still in future → accepting entries.
+            // status==open AND lock time passed → effectively locked, waiting
+            // for admin to settle. status==locked → same.
+            const isLockedOrPast = question.status === "locked" || lockMs <= nowMs;
+            const label = isLockedOrPast ? "Awaiting official result" : "Locks in";
             return (
               <li key={entry.id}>
                 <Link
@@ -92,10 +98,10 @@ export default async function ActivePicksPage() {
                     <span
                       className={
                         "font-mono text-[10px] uppercase tracking-[0.18em] " +
-                        (isOpen ? "text-[var(--primary)]" : "text-amber-300")
+                        (isLockedOrPast ? "text-amber-300" : "text-[var(--primary)]")
                       }
                     >
-                      {isOpen ? "OPEN" : "LOCKED"}
+                      {isLockedOrPast ? "LOCKED" : "OPEN"}
                     </span>
                   </div>
                   <h2 className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -114,10 +120,10 @@ export default async function ActivePicksPage() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">
-                      {isOpen ? "Locks in" : "Awaiting result"}
-                    </span>
-                    <CountdownTimer locksAt={question.locksAt.toISOString()} size="sm" />
+                    <span className="text-[var(--text-muted)]">{label}</span>
+                    {!isLockedOrPast && (
+                      <CountdownTimer locksAt={question.locksAt.toISOString()} size="sm" />
+                    )}
                   </div>
                 </Link>
               </li>

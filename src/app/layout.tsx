@@ -62,8 +62,8 @@ export default async function RootLayout({
         <TopBar />
         <main
           className={
-            "mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8 min-w-0 " +
-            (showTabs ? "pb-32" : "")
+            "mx-auto w-full max-w-3xl flex-1 px-4 pt-3 sm:pt-4 min-w-0 " +
+            (showTabs ? "pb-28" : "pb-8")
           }
         >
           {children}
