@@ -169,22 +169,22 @@ export default async function AdminPage({
           <summary className="cursor-pointer text-xs text-[var(--text-muted)]">
             New game fields (used only if Game = + New game)
           </summary>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <input
               name="newLeague"
               placeholder="League"
               defaultValue="NFL"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-xs text-[var(--text)]"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)]"
             />
             <input
               name="newAway"
               placeholder="Away"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-xs text-[var(--text)]"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)]"
             />
             <input
               name="newHome"
               placeholder="Home"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-xs text-[var(--text)]"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)]"
             />
           </div>
         </details>

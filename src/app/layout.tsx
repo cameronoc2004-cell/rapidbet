@@ -55,9 +55,9 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text)]">
+      <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text)] overflow-x-hidden">
         <TopBar />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8 min-w-0">
           {children}
         </main>
         <footer className="border-t border-[var(--border)] safe-bottom">

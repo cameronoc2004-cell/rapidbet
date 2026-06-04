@@ -57,10 +57,10 @@ export default async function MePage({
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
           Profile
         </div>
-        <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-[var(--text)]">
+        <h1 className="mt-1 truncate font-display text-2xl font-bold tracking-tight text-[var(--text)]">
           @{session.profile.username}
         </h1>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">
+        <p className="mt-1 truncate text-sm text-[var(--text-muted)]">
           {session.authUser.email}
         </p>
       </header>
@@ -232,42 +232,44 @@ export default async function MePage({
             No wallet activity yet.
           </p>
         ) : (
-          <table className="mt-3 w-full text-sm">
-            <thead className="text-left text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              <tr>
-                <th className="py-2 pr-2">When</th>
-                <th className="py-2 pr-2">Reason</th>
-                <th className="py-2 pr-2 text-right">Δ</th>
-                <th className="py-2 pr-2 text-right">After</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.map((e) => (
-                <tr key={e.id} className="border-t border-[var(--border)]">
-                  <td className="py-2 pr-2 text-[var(--text-muted)]">
-                    {new Date(e.createdAt).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="py-2 pr-2 text-[var(--text-muted)]">{e.reason}</td>
-                  <td
-                    className={`py-2 pr-2 text-right font-mono ${
-                      e.deltaMinor >= 0 ? "text-[var(--primary)]" : "text-[var(--danger)]"
-                    }`}
-                  >
-                    {e.deltaMinor >= 0 ? "+" : ""}
-                    {formatMoney(e.deltaMinor)}
-                  </td>
-                  <td className="py-2 pr-2 text-right font-mono text-[var(--text-muted)]">
-                    {formatMoney(e.balanceAfterMinor)}
-                  </td>
+          <div className="-mx-4 mt-3 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead className="text-left text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                <tr>
+                  <th className="py-2 pr-2">When</th>
+                  <th className="py-2 pr-2">Reason</th>
+                  <th className="py-2 pr-2 text-right">Δ</th>
+                  <th className="py-2 pr-2 text-right">After</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ledger.map((e) => (
+                  <tr key={e.id} className="border-t border-[var(--border)]">
+                    <td className="whitespace-nowrap py-2 pr-2 text-[var(--text-muted)]">
+                      {new Date(e.createdAt).toLocaleString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-2 pr-2 text-[var(--text-muted)]">{e.reason}</td>
+                    <td
+                      className={`whitespace-nowrap py-2 pr-2 text-right font-mono ${
+                        e.deltaMinor >= 0 ? "text-[var(--primary)]" : "text-[var(--danger)]"
+                      }`}
+                    >
+                      {e.deltaMinor >= 0 ? "+" : ""}
+                      {formatMoney(e.deltaMinor)}
+                    </td>
+                    <td className="whitespace-nowrap py-2 pr-2 text-right font-mono text-[var(--text-muted)]">
+                      {formatMoney(e.balanceAfterMinor)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>

@@ -18,10 +18,10 @@ export async function TopBar() {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
       className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-md"
     >
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-3 py-3 sm:px-4">
         <TopBarWordmark appName={APP_NAME} tagline="skill contests" />
 
-        <nav className="flex items-center gap-3">
+        <nav className="flex min-w-0 items-center gap-2 sm:gap-3">
           {profile ? (
             <>
               <TopBarNav
@@ -35,7 +35,7 @@ export async function TopBar() {
               <form action={logout}>
                 <button
                   type="submit"
-                  className="text-xs text-[var(--text-muted)] transition-colors hover:text-white"
+                  className="whitespace-nowrap text-xs text-[var(--text-muted)] transition-colors hover:text-white"
                 >
                   Sign out
                 </button>

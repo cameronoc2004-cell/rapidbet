@@ -161,7 +161,7 @@ export function AdminQuestionRow(props: AdminQuestionRowProps) {
             />
           </label>
           {!props.hasEntries && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <label className="block">
                 <span className="block text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   Quarter
