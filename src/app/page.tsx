@@ -65,7 +65,7 @@ export default async function Home() {
             One numeric prediction per question. Closest answer wins the pool.
           </p>
         </div>
-        <RefreshButton label="Refresh events" />
+        <RefreshButton label="Refresh events" autoRefreshMs={30_000} />
       </section>
 
       <EventList items={items} />

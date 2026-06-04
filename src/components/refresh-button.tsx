@@ -1,17 +1,22 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 // Re-fetches the parent server component's data without a full reload.
 // useTransition tracks router.refresh()'s in-flight state, so we can spin the
 // icon during the round-trip. 44pt target so iOS thumbs hit it cleanly.
+//
+// Pass autoRefreshMs to also poll on an interval (paused when the tab is
+// hidden and skipped when a manual refresh is already in flight).
 export function RefreshButton({
   className = "",
   label = "Refresh",
+  autoRefreshMs,
 }: {
   className?: string;
   label?: string;
+  autoRefreshMs?: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -22,6 +27,16 @@ export function RefreshButton({
       router.refresh();
     });
   };
+
+  useEffect(() => {
+    if (!autoRefreshMs || autoRefreshMs < 5_000) return;
+    const id = setInterval(() => {
+      // Don't spend a server hit when the user isn't even looking.
+      if (typeof document !== "undefined" && document.hidden) return;
+      startTransition(() => router.refresh());
+    }, autoRefreshMs);
+    return () => clearInterval(id);
+  }, [autoRefreshMs, router]);
 
   return (
     <button
