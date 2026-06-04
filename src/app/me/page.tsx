@@ -1,134 +1,164 @@
-import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { skillScores } from "@/db/schema";
+import { entries, skillScores } from "@/db/schema";
 import { isAdmin, requireOnboarded } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { formatMoney } from "@/lib/format";
-import { PushToggle } from "@/components/push-toggle";
-import { NotificationPrefs } from "@/components/notification-prefs";
-import { logout } from "@/app/(auth)/login/actions";
-
-const OK_BANNERS: Record<string, string> = {
-  password_updated: "Password updated.",
-  notif_prefs: "Notification preferences saved.",
-};
+import { ProfileMenu } from "@/components/profile-menu";
 
 export const dynamic = "force-dynamic";
 
-export default async function MePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ ok?: string }>;
-}) {
+export default async function MePage() {
   const session = await requireOnboarded();
+  const profile = session.profile!;
   const admin = await isAdmin();
-  const { ok } = await searchParams;
-  const { virtualMinor } = await getWallet(session.profile!.id);
+  const { virtualMinor } = await getWallet(profile.id);
 
-  // Skill points = sum of all per-question awards.
+  // Aggregate everything once and compute fun stats client-side cheap.
+  const myEntries = await db.select().from(entries).where(eq(entries.userId, profile.id));
+  const settled = myEntries.filter((e) => e.payoutMinor !== null);
+  const wins = settled.filter((e) => (e.payoutMinor ?? 0) > 0);
+  const totalWonMinor = wins.reduce((s, e) => s + (e.payoutMinor ?? 0), 0);
+  const totalStakedMinor = myEntries.reduce((s, e) => s + e.feePaidMinor, 0);
+  const winRate = settled.length > 0 ? wins.length / settled.length : 0;
+  const bestWinMinor = wins.reduce((m, e) => Math.max(m, e.payoutMinor ?? 0), 0);
+  const netMinor = totalWonMinor - totalStakedMinor;
+
   const skill = await db
-    .select({ pointsAwarded: skillScores.pointsAwarded })
+    .select({ pct: skillScores.percentileRank, pts: skillScores.pointsAwarded })
     .from(skillScores)
-    .where(eq(skillScores.userId, session.profile!.id));
-  const totalPoints = skill.reduce((s, r) => s + r.pointsAwarded, 0);
+    .where(eq(skillScores.userId, profile.id));
+  const totalPoints = skill.reduce((s, r) => s + r.pts, 0);
+  const avgPctile = skill.length > 0
+    ? skill.reduce((s, r) => s + r.pct, 0) / skill.length
+    : 0;
 
   return (
-    <div className="space-y-7">
-      <header>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Profile
+    <div className="space-y-6">
+      {/* Header: hamburger top-left, identity, balance below */}
+      <header className="space-y-3">
+        <div className="flex items-center justify-between">
+          <ProfileMenu
+            notifyEmail={profile.notifyEmail ?? true}
+            notifyPush={profile.notifyPush ?? true}
+            isAdmin={admin}
+          />
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Profile
+          </div>
         </div>
-        <h1 className="mt-1 truncate font-display text-2xl font-bold tracking-tight text-[var(--text)]">
-          @{session.profile!.username}
-        </h1>
-        <p className="mt-1 truncate text-sm text-[var(--text-muted)]">
-          {session.authUser.email}
-        </p>
+
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-3xl font-bold tracking-tight text-[var(--text)]">
+            @{profile.username}
+          </h1>
+          <p className="mt-1 truncate text-sm text-[var(--text-muted)]">
+            Balance{" "}
+            <span className="font-mono font-semibold text-[var(--primary)]" data-tabular="true">
+              {formatMoney(virtualMinor)}
+            </span>
+          </p>
+        </div>
       </header>
 
-      {ok && OK_BANNERS[ok] && (
-        <p className="rounded-md border border-[var(--primary-lo)]/40 bg-[var(--primary-lo)]/10 px-3 py-2 text-sm text-[var(--primary)]">
-          {OK_BANNERS[ok]}
-        </p>
-      )}
-
-      <section className="grid grid-cols-2 gap-3">
-        <Stat label="Balance" value={formatMoney(virtualMinor)} accent />
-        <Stat label="Skill points" value={totalPoints.toLocaleString()} />
+      {/* Hero stats: Wins · Picks · Won */}
+      <section className="grid grid-cols-3 gap-2">
+        <HeroStat label="Wins" value={wins.length.toLocaleString()} accent />
+        <HeroStat label="Picks" value={myEntries.length.toLocaleString()} />
+        <HeroStat label="Won" value={formatMoney(totalWonMinor)} mono />
       </section>
 
+      {/* Secondary fun stats */}
       <section>
         <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Notifications
+          Form
         </h2>
-        <div className="mt-3 space-y-3">
-          <NotificationPrefs
-            notifyEmail={session.profile!.notifyEmail ?? true}
-            notifyPush={session.profile!.notifyPush ?? true}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <FunStat
+            label="Win rate"
+            value={settled.length > 0 ? `${(winRate * 100).toFixed(0)}%` : "—"}
+            sub={settled.length > 0 ? `${wins.length} / ${settled.length} settled` : "No settled picks yet"}
           />
-          <PushToggle />
+          <FunStat
+            label="Best win"
+            value={bestWinMinor > 0 ? formatMoney(bestWinMinor) : "—"}
+            sub={bestWinMinor > 0 ? "single payout" : "Win a pool to set this"}
+          />
+          <FunStat
+            label="Accuracy"
+            value={skill.length > 0 ? `${(avgPctile * 100).toFixed(0)}%` : "—"}
+            sub={skill.length > 0 ? `avg percentile · ${skill.length} contests` : "Settle a pick to see this"}
+          />
+          <FunStat
+            label="Net"
+            value={formatMoney(netMinor)}
+            sub={`${formatMoney(totalStakedMinor)} staked`}
+            accent={netMinor >= 0}
+            danger={netMinor < 0}
+          />
         </div>
       </section>
 
-      <section>
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Account
-        </h2>
-        <div className="mt-3 space-y-2">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-            <div className="font-display text-base font-semibold text-[var(--text)]">
-              Password
-            </div>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Change your password by email.
-            </p>
-            <Link
-              href="/forgot-password"
-              className="mt-3 inline-block rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)] hover:text-white"
-            >
-              Send reset link
-            </Link>
+      {/* Skill points footer — small fun summary */}
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Skill points
           </div>
-
-          {admin && (
-            <Link
-              href="/admin"
-              className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--primary-lo)]"
-            >
-              <div>
-                <div className="font-display text-base font-semibold text-[var(--text)]">
-                  Admin
-                </div>
-                <p className="mt-1 text-sm text-[var(--text-muted)]">
-                  Post questions, settle, void.
-                </p>
-              </div>
-              <span className="text-[var(--text-muted)]">→</span>
-            </Link>
-          )}
-
-          <form action={logout}>
-            <button
-              type="submit"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-left text-base font-semibold text-[var(--danger)] transition-colors hover:border-[var(--danger)]/60"
-            >
-              Sign out
-            </button>
-          </form>
+          <div className="font-mono text-base font-semibold text-[var(--text)]" data-tabular="true">
+            {totalPoints.toLocaleString()}
+          </div>
         </div>
       </section>
+    </div>
+  );
+}
 
-      <div className="flex justify-center gap-4 pt-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-        <Link href="/terms" className="hover:text-white">Terms</Link>
-        <span>·</span>
-        <Link href="/privacy" className="hover:text-white">Privacy</Link>
+/* ───────── Stat tiles ───────── */
+
+function HeroStat({
+  label,
+  value,
+  accent,
+  mono,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-4 text-center">
+      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        {label}
+      </div>
+      <div
+        className={
+          "mt-1 font-mono text-2xl font-bold tracking-tight " +
+          (accent ? "text-[var(--primary)] " : "text-[var(--text)] ") +
+          (mono ? "" : "")
+        }
+        data-tabular="true"
+      >
+        {value}
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function FunStat({
+  label,
+  value,
+  sub,
+  accent,
+  danger,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  accent?: boolean;
+  danger?: boolean;
+}) {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
       <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -136,13 +166,18 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
       </div>
       <div
         className={
-          "mt-1 font-mono text-xl font-semibold " +
-          (accent ? "text-[var(--primary)]" : "text-[var(--text)]")
+          "mt-1 font-mono text-lg font-semibold " +
+          (danger
+            ? "text-[var(--danger)]"
+            : accent
+            ? "text-[var(--primary)]"
+            : "text-[var(--text)]")
         }
         data-tabular="true"
       >
         {value}
       </div>
+      <div className="mt-1 text-[11px] text-[var(--text-muted)]">{sub}</div>
     </div>
   );
 }
