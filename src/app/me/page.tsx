@@ -1,17 +1,15 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries } from "@/db/schema";
-import { isAdmin, requireOnboarded } from "@/lib/session";
+import { requireOnboarded } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { formatMoney } from "@/lib/format";
-import { ProfileMenu } from "@/components/profile-menu";
 
 export const dynamic = "force-dynamic";
 
 export default async function MePage() {
   const session = await requireOnboarded();
   const profile = session.profile!;
-  const admin = await isAdmin();
   const { virtualMinor } = await getWallet(profile.id);
 
   // Three numbers only: picks placed, wins, total won.
@@ -21,29 +19,19 @@ export default async function MePage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between">
-          <ProfileMenu
-            notifyEmail={profile.notifyEmail ?? true}
-            notifyPush={profile.notifyPush ?? true}
-            isAdmin={admin}
-          />
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Profile
-          </div>
+      <header className="min-w-0">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          Profile
         </div>
-
-        <div className="min-w-0">
-          <h1 className="truncate font-display text-3xl font-bold tracking-tight text-[var(--text)]">
-            @{profile.username}
-          </h1>
-          <p className="mt-1 truncate text-sm text-[var(--text-muted)]">
-            Balance{" "}
-            <span className="font-mono font-semibold text-[var(--primary)]" data-tabular="true">
-              {formatMoney(virtualMinor)}
-            </span>
-          </p>
-        </div>
+        <h1 className="mt-1 truncate font-display text-3xl font-bold tracking-tight text-[var(--text)]">
+          @{profile.username}
+        </h1>
+        <p className="mt-1 truncate text-sm text-[var(--text-muted)]">
+          Balance{" "}
+          <span className="font-mono font-semibold text-[var(--primary)]" data-tabular="true">
+            {formatMoney(virtualMinor)}
+          </span>
+        </p>
       </header>
 
       <section className="grid grid-cols-3 gap-2">
