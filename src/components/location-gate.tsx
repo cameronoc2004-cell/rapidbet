@@ -41,47 +41,90 @@ export function LocationGate({ verifyAction }: LocationGateProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [pending, startTransition] = useTransition();
 
-  const askForLocation = () => {
+  // Detect Capacitor (native iOS/Android shell). In WKWebView the standard
+  // navigator.geolocation cannot trigger the OS permission prompt — we have
+  // to go through @capacitor/geolocation which calls the native API.
+  const isNative = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    return !!cap?.isNativePlatform?.();
+  };
+
+  const submitCoords = (latitude: number, longitude: number) => {
+    setStatus("submitting");
+    const fd = new FormData();
+    fd.set("latitude", String(latitude));
+    fd.set("longitude", String(longitude));
+    startTransition(async () => {
+      try {
+        await verifyAction(fd);
+        router.refresh();
+        setStatus("idle");
+      } catch (e) {
+        const code = e instanceof Error ? e.message : "error";
+        if (
+          code === "outside_permitted_state" ||
+          code === "non_us" ||
+          code === "lookup_failed" ||
+          code === "invalid_coords"
+        ) {
+          setStatus(code);
+        } else {
+          setStatus("error");
+        }
+      }
+    });
+  };
+
+  const askNativeLocation = async () => {
+    // Lazy-load the plugin so the web bundle stays light.
+    const { Geolocation } = await import("@capacitor/geolocation");
+    let perm = await Geolocation.checkPermissions();
+    if (perm.location === "prompt" || perm.location === "prompt-with-rationale") {
+      perm = await Geolocation.requestPermissions();
+    }
+    if (perm.location !== "granted") {
+      setStatus("denied");
+      return;
+    }
+    const pos = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 12_000,
+    });
+    submitCoords(pos.coords.latitude, pos.coords.longitude);
+  };
+
+  const askWebLocation = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setStatus("unsupported");
       return;
     }
-    setStatus("requesting");
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setStatus("submitting");
-        const fd = new FormData();
-        fd.set("latitude", String(pos.coords.latitude));
-        fd.set("longitude", String(pos.coords.longitude));
-        startTransition(async () => {
-          try {
-            await verifyAction(fd);
-            // On success, refresh so /onboarding re-renders with state verified
-            // (and maybe redirects home if all three gates are now green).
-            router.refresh();
-            setStatus("idle");
-          } catch (e) {
-            const code = e instanceof Error ? e.message : "error";
-            if (
-              code === "outside_permitted_state" ||
-              code === "non_us" ||
-              code === "lookup_failed" ||
-              code === "invalid_coords"
-            ) {
-              setStatus(code);
-            } else {
-              setStatus("error");
-            }
-          }
-        });
-      },
+      (pos) => submitCoords(pos.coords.latitude, pos.coords.longitude),
       (err) => {
-        // PERMISSION_DENIED = 1, POSITION_UNAVAILABLE = 2, TIMEOUT = 3
         if (err.code === err.PERMISSION_DENIED) setStatus("denied");
         else setStatus("lookup_failed");
       },
       { enableHighAccuracy: true, timeout: 12_000, maximumAge: 60_000 },
     );
+  };
+
+  const askForLocation = async () => {
+    setStatus("requesting");
+    try {
+      if (isNative()) {
+        await askNativeLocation();
+      } else {
+        askWebLocation();
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message?.toLowerCase() : "";
+      if (msg.includes("denied") || msg.includes("permission")) {
+        setStatus("denied");
+      } else {
+        setStatus("lookup_failed");
+      }
+    }
   };
 
   const blocked =

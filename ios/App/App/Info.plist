@@ -47,5 +47,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Rallypot uses your location once to verify your state. We never accept a self-reported location.</string>
 </dict>
 </plist>
