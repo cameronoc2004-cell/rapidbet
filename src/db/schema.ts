@@ -396,6 +396,87 @@ export const selfExclusions = pgTable("self_exclusions", {
   reason: text("reason"),
 });
 
+// --------- Double-entry ledger ---------
+// Money integrity is held by THIS subsystem, not the wallets table. Balances
+// are NEVER stored as a mutable field — they're always derived from the sum
+// of postings against an account.
+// See LEDGER.md / src/db/ledger.ts for the model + invariants.
+export const accountKindEnum = pgEnum("account_kind", [
+  "user_available",
+  "user_held",
+  "pool",
+  "house_rake",
+  "external_rail",
+]);
+
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: serial("id").primaryKey(),
+    // Canonical string key. Unique. Lets the rest of the app look up an
+    // account by intent without remembering numeric IDs.
+    //   user:{id}:available:{moneyKind}
+    //   user:{id}:held:{moneyKind}
+    //   pool:{questionId}:{moneyKind}
+    //   house:rake:{moneyKind}
+    //   ext:{rail}:{moneyKind}      (e.g. ext:trustly:real, ext:genesis:virtual)
+    key: text("key").notNull().unique(),
+    kind: accountKindEnum("kind").notNull(),
+    userId: integer("user_id").references(() => profiles.id, { onDelete: "cascade" }),
+    questionId: integer("question_id").references(() => questions.id, { onDelete: "cascade" }),
+    moneyKind: moneyKindEnum("money_kind").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [
+    index("accounts_user_idx").on(t.userId, t.kind, t.moneyKind),
+    index("accounts_question_idx").on(t.questionId),
+    index("accounts_kind_idx").on(t.kind, t.moneyKind),
+  ],
+);
+
+// One row per logical money event. Its postings (1..N) must sum to zero.
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  // semantic event tag: deposit | buyin | lock | void_refund | settle_rake |
+  // settle_payout | withdraw_initiate | withdraw_confirm | withdraw_fail |
+  // signup_bonus | genesis | admin_adjust
+  kind: text("kind").notNull(),
+  idempotencyKey: text("idempotency_key").unique(),
+  refType: text("ref_type"),
+  refId: integer("ref_id"),
+  payload: jsonb("payload"),
+  actorUserId: integer("actor_user_id").references(() => profiles.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+});
+
+// The actual line items. amountMinor is signed: positive = credit to that
+// account, negative = debit from it. Append-only, never mutated. Corrections
+// are new reversing transactions.
+export const postings = pgTable(
+  "postings",
+  {
+    id: serial("id").primaryKey(),
+    transactionId: integer("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "restrict" }),
+    accountId: integer("account_id")
+      .notNull()
+      .references(() => accounts.id),
+    amountMinor: bigint("amount_minor", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [
+    index("postings_account_idx").on(t.accountId),
+    index("postings_transaction_idx").on(t.transactionId),
+  ],
+);
+
 // --------- Audit log (every sensitive action) ---------
 export const auditLogs = pgTable(
   "audit_logs",

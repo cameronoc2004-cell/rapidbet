@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { profiles, wallets } from "@/db/schema";
-import { postWalletTx } from "@/db/wallet";
+import { genesisCredit } from "@/lib/ledger-ops";
 import { logAudit } from "@/db/audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { STARTER_VIRTUAL_BALANCE_MINOR } from "@/lib/config";
@@ -110,11 +110,11 @@ export async function signUp(formData: FormData) {
       .returning();
     await tx.insert(wallets).values({ userId: created.id });
     if (STARTER_VIRTUAL_BALANCE_MINOR > 0) {
-      await postWalletTx(
+      await genesisCredit(
         {
           userId: created.id,
+          amountMinor: STARTER_VIRTUAL_BALANCE_MINOR,
           moneyKind: "virtual",
-          deltaMinor: STARTER_VIRTUAL_BALANCE_MINOR,
           reason: "signup_bonus",
           idempotencyKey: `signup_bonus:${created.id}`,
         },

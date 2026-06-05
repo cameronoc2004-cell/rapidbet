@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { paymentOrders } from "@/db/schema";
-import { postWalletTx } from "@/db/wallet";
+import { depositConfirmed, withdrawFailed } from "@/lib/ledger-ops";
 import { logAudit } from "@/db/audit";
 import { REAL_MONEY_ENABLED } from "@/lib/config";
 import { services } from "@/lib/services/config";
@@ -87,15 +87,12 @@ export async function POST(req: NextRequest) {
   // Payouts: "debit" = payout sent. "credit" notification on payout = refund/returned.
   if (method === "credit" && order.kind === "deposit") {
     await db.transaction(async (tx) => {
-      await postWalletTx(
+      await depositConfirmed(
         {
           userId: order.userId,
+          amountMinor,
+          trustlyOrderId: vendorOrderId,
           moneyKind: "real",
-          deltaMinor: amountMinor,
-          reason: "deposit",
-          refType: "payment_order",
-          refId: order.id,
-          idempotencyKey: `trustly:deposit:${vendorOrderId}`,
         },
         tx,
       );
@@ -113,15 +110,12 @@ export async function POST(req: NextRequest) {
   } else if (method === "credit" && order.kind === "withdrawal") {
     // Withdrawal failed/returned: reverse the original debit.
     await db.transaction(async (tx) => {
-      await postWalletTx(
+      await withdrawFailed(
         {
           userId: order.userId,
+          amountMinor: order.amountMinor,
+          trustlyOrderId: vendorOrderId,
           moneyKind: "real",
-          deltaMinor: order.amountMinor,
-          reason: "entry_refund",
-          refType: "payment_order",
-          refId: order.id,
-          idempotencyKey: `trustly:withdraw_reversal:${vendorOrderId}`,
         },
         tx,
       );
