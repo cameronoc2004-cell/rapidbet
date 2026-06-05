@@ -45,9 +45,22 @@ export function AdminQuestionRow(props: AdminQuestionRowProps) {
             </div>
             <div className="mt-1 truncate text-sm text-[var(--text)]">{props.title}</div>
             <div className="mt-1 flex flex-wrap items-baseline gap-x-3 font-mono text-[11px] text-[var(--text-muted)]">
-              <span className="text-[var(--primary)]">
-                pot ${((props.entryCount * props.entryFeeMinor) / 100).toFixed(2)}
-              </span>
+              {(() => {
+                const potMinor = props.entryCount * props.entryFeeMinor;
+                // 5% rake on the gross pool. Stays in sync with
+                // COMMISSION_RATE_BPS without re-deriving from settle math.
+                const rakeMinor = Math.floor((potMinor * 500) / 10_000);
+                return (
+                  <>
+                    <span>
+                      pot ${(potMinor / 100).toFixed(2)}
+                    </span>
+                    <span className="text-[var(--primary)]">
+                      rake ${(rakeMinor / 100).toFixed(2)}
+                    </span>
+                  </>
+                );
+              })()}
               <span>
                 {props.entryCount} player{props.entryCount === 1 ? "" : "s"}
               </span>

@@ -97,7 +97,7 @@ export default async function AdminPage({
         />
 
         <div className="grid grid-cols-2 gap-3">
-          <label className="block">
+          <label className="block min-w-0">
             <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Game
             </span>
@@ -105,7 +105,7 @@ export default async function AdminPage({
               name="gameId"
               required
               defaultValue={existingGames[0]?.id ?? "new"}
-              className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
+              className="mt-1.5 w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
             >
               {existingGames.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -116,14 +116,14 @@ export default async function AdminPage({
             </select>
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Quarter
             </span>
             <select
               name="window"
               defaultValue="Q1"
-              className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
+              className="mt-1.5 w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
             >
               {["Q1", "Q2", "Q3", "Q4", "OT", "GAME"].map((q) => (
                 <option key={q} value={q}>
@@ -133,7 +133,9 @@ export default async function AdminPage({
             </select>
           </label>
 
-          <label className="block">
+          {/* Locks at gets the full row width on mobile so the native iOS
+              datetime picker has room. Goes back to half-width on sm+. */}
+          <label className="col-span-2 block min-w-0 sm:col-span-1">
             <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Locks at
             </span>
@@ -142,11 +144,11 @@ export default async function AdminPage({
               name="locksAt"
               required
               defaultValue={defaultLocksAtStr}
-              className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
+              className="mt-1.5 w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
             />
           </label>
 
-          <label className="block">
+          <label className="col-span-2 block min-w-0 sm:col-span-1">
             <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Entry fee
             </span>
@@ -159,7 +161,7 @@ export default async function AdminPage({
                 min="0.01"
                 required
                 defaultValue="1.00"
-                className="w-full bg-transparent py-2.5 pr-3 text-sm text-[var(--text)] outline-none"
+                className="w-full min-w-0 bg-transparent py-2.5 pr-3 text-sm text-[var(--text)] outline-none"
               />
             </div>
           </label>

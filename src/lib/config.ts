@@ -47,11 +47,9 @@ export const PLAY_PERMITTED_STATES: string[] = (() => {
 export const PLAY_MIN_AGE_YEARS = Number(process.env.PLAY_MIN_AGE_YEARS ?? 18);
 
 // Operator commission on each pool, in basis points. 100 bps = 1.00%.
-// Phase 1 free-to-play: defaults to 0 so the full pot goes to the winner(s).
-// Flip up (e.g. 100) only when real-money mode is on, payment processor is
-// live, and operator revenue is in scope — that's a Phase 2 decision.
+// Default 500 bps = 5.00%. Override via COMMISSION_RATE_BPS env var.
 export const COMMISSION_RATE_BPS = Number(
-  process.env.COMMISSION_RATE_BPS ?? 0,
+  process.env.COMMISSION_RATE_BPS ?? 500,
 );
 
 // Free-to-play starter balance in MINOR UNITS (cents). $100 by default.
