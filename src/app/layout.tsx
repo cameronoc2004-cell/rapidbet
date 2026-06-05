@@ -63,7 +63,7 @@ export default async function RootLayout({
         <main
           className={
             "mx-auto w-full max-w-3xl flex-1 px-4 pt-3 sm:pt-4 min-w-0 " +
-            (showTabs ? "pb-28" : "pb-8")
+            (showTabs ? "pb-20" : "pb-8")
           }
         >
           {children}

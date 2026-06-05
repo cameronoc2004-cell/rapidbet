@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationPrefs } from "./notification-prefs";
@@ -21,6 +22,12 @@ interface ProfileMenuProps {
 // sign-out as a pill at the bottom.
 export function ProfileMenu(props: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Need to wait until we're on the client so document.body exists for portal.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -40,46 +47,34 @@ export function ProfileMenu(props: ProfileMenuProps) {
     };
   }, [open]);
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open settings"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[var(--text)] transition-colors hover:bg-[var(--surface)]"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16" />
-        </svg>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
-            />
-            <motion.aside
-              key="drawer"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Settings"
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              style={{
-                paddingTop: "max(env(safe-area-inset-top), 16px)",
-                paddingBottom: "max(env(safe-area-inset-bottom), 16px)",
-              }}
-              className="fixed inset-y-0 left-0 z-50 flex w-[88vw] max-w-sm flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--bg)]"
-            >
+  const drawer = (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm"
+          />
+          <motion.aside
+            key="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Settings"
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 34 }}
+            style={{
+              paddingTop: "max(env(safe-area-inset-top), 16px)",
+              paddingBottom: "max(env(safe-area-inset-bottom), 16px)",
+            }}
+            className="fixed inset-y-0 left-0 z-[100] flex w-[88vw] max-w-sm flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--bg)]"
+          >
               {/* Close affordance — X top-right, like a sheet */}
               <div className="flex items-center justify-end px-5 pb-2">
                 <button
@@ -177,6 +172,24 @@ export function ProfileMenu(props: ProfileMenuProps) {
           </>
         )}
       </AnimatePresence>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Open settings"
+        className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-[var(--text)] transition-colors hover:bg-[var(--surface)]"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+      {/* Render the drawer in a portal on document.body so it escapes any
+          ancestor stacking context (the TopBar uses backdrop-blur which would
+          otherwise trap the z-index). */}
+      {mounted ? createPortal(drawer, document.body) : null}
     </>
   );
 }
