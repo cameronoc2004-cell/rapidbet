@@ -4,7 +4,7 @@ import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/top-bar";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
-import { getCurrentProfile } from "@/lib/session";
+import { getCurrentSession, getOnboardingStatus } from "@/lib/session";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -48,10 +48,12 @@ export const viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Show the bottom tab bar only for signed-in users; logged-out pages
-  // (login, forgot-password, terms, privacy) stay clean.
-  const profile = await getCurrentProfile();
-  const showTabs = !!profile;
+  // Show the bottom tab bar only for users who are signed in AND fully
+  // onboarded (email verified + age 18+ + state allowed). Mid-flow users
+  // and logged-out users see no nav so they can't tap into pages that would
+  // just redirect them back to /onboarding or /login.
+  const session = await getCurrentSession();
+  const showTabs = !!session && getOnboardingStatus(session).complete;
 
   return (
     <html
