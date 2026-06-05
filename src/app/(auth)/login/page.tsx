@@ -22,12 +22,13 @@ interface PageProps {
     error?: string;
     email?: string;
     resent?: string;
+    deleted?: string;
   }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
   if (await getCurrentProfileId()) redirect("/");
-  const { mode, error, email, resent } = await searchParams;
+  const { mode, error, email, resent, deleted } = await searchParams;
 
   return (
     <div className="mx-auto mt-12 max-w-sm">
@@ -42,6 +43,12 @@ export default async function LoginPage({ searchParams }: PageProps) {
           Per-quarter prediction contests. Closest answer wins the pool.
         </p>
       </div>
+
+      {deleted === "1" && (
+        <p className="mt-6 rounded-md border border-[var(--primary-lo)]/40 bg-[var(--primary-lo)]/10 px-3 py-2 text-center text-sm text-[var(--primary)]">
+          Your account has been deleted.
+        </p>
+      )}
 
       {mode === "verify" ? (
         <VerifyEmailCard email={email} resent={resent === "1"} error={error} />

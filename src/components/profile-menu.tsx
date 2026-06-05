@@ -5,7 +5,9 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationPrefs } from "./notification-prefs";
 import { PushToggle } from "./push-toggle";
+import { ConfirmAction } from "./confirm-action";
 import { logout } from "@/app/(auth)/login/actions";
+import { deleteAccount } from "@/app/me/actions";
 
 interface ProfileMenuProps {
   notifyEmail: boolean;
@@ -124,6 +126,29 @@ export function ProfileMenu(props: ProfileMenuProps) {
                       <Chevron />
                     </Link>
                   )}
+                  <ConfirmAction
+                    triggerLabel={
+                      <span className="flex items-center justify-between">
+                        <span>Delete account</span>
+                        <Chevron />
+                      </span>
+                    }
+                    triggerClassName="block w-full rounded-xl border border-[var(--danger)]/40 bg-[var(--surface)] px-4 py-3 text-left text-sm font-medium text-[var(--danger)] transition-colors hover:border-[var(--danger)]"
+                    title="Delete your account?"
+                    body={
+                      <>
+                        <p>
+                          This permanently deletes your profile, balance, picks,
+                          wins, notification tokens, and all account history.
+                        </p>
+                        <p className="mt-2">This cannot be undone.</p>
+                      </>
+                    }
+                    requireText="DELETE"
+                    confirmLabel="Delete forever"
+                    destructive
+                    action={deleteAccount}
+                  />
                 </div>
               </Expandable>
 
@@ -136,14 +161,14 @@ export function ProfileMenu(props: ProfileMenuProps) {
               </Row>
 
               <div className="mt-auto flex items-center justify-between px-5 pt-6">
-                <form action={logout}>
-                  <button
-                    type="submit"
-                    className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text)] transition-colors hover:border-[var(--danger)]/60 hover:text-[var(--danger)]"
-                  >
-                    Log out
-                  </button>
-                </form>
+                <ConfirmAction
+                  triggerLabel="Log out"
+                  triggerClassName="rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text)] transition-colors hover:border-[var(--danger)]/60 hover:text-[var(--danger)]"
+                  title="Sign out?"
+                  body="You'll need to sign back in to play."
+                  confirmLabel="Sign out"
+                  action={logout}
+                />
                 <span className="font-display text-sm font-bold tracking-tight text-[var(--text-muted)]">
                   Rallypot
                 </span>
