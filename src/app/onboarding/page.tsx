@@ -4,7 +4,7 @@ import {
   getOnboardingStatus,
 } from "@/lib/session";
 import { PLAY_MIN_AGE_YEARS } from "@/lib/config";
-import { resendVerification } from "../(auth)/login/actions";
+import { logout, resendVerification } from "../(auth)/login/actions";
 import { submitDateOfBirth, verifyLocation } from "./actions";
 import { LocationGate } from "@/components/location-gate";
 
@@ -141,12 +141,14 @@ export default async function OnboardingPage({
       </StepCard>
 
       <div className="pt-2 text-center">
-        <a
-          href="/me"
-          className="text-xs text-[var(--text-muted)] hover:text-white hover:underline"
-        >
-          Manage profile →
-        </a>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="text-xs text-[var(--text-muted)] hover:text-white hover:underline"
+          >
+            Sign out
+          </button>
+        </form>
       </div>
     </div>
   );

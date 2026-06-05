@@ -1,15 +1,19 @@
-import { getCurrentProfile, isAdmin } from "@/lib/session";
+import { getCurrentSession, getOnboardingStatus, isAdmin } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { APP_NAME } from "@/lib/config";
 import { BalancePill } from "./balance-pill";
 import { TopBarWordmark } from "./top-bar-nav";
 import { ProfileMenu } from "./profile-menu";
 
-// Minimal TopBar: hamburger ☰ (left) + wordmark + balance pill (right) when
-// signed in. The hamburger opens the global settings drawer so it's
-// accessible from every tab, not just /me.
+// Two-phase chrome:
+//   Phase 1 (auth + onboarding) — wordmark only. No hamburger, no balance,
+//   no tab bar.
+//   Phase 2 (fully onboarded user) — wordmark + ☰ ProfileMenu + balance pill.
+//   The BottomTabBar (in layout.tsx) follows the same gate.
 export async function TopBar() {
-  const profile = await getCurrentProfile();
+  const session = await getCurrentSession();
+  const onboarded = !!session && getOnboardingStatus(session).complete;
+  const profile = onboarded ? session.profile! : null;
   const wallet = profile ? await getWallet(profile.id) : null;
   const admin = profile ? await isAdmin() : false;
 
