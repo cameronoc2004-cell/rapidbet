@@ -109,20 +109,31 @@ export async function settleQuestionAction(formData: FormData) {
   const session = await getCurrentSession();
   const actor = session?.profile?.id ?? undefined;
   const questionId = Number(formData.get("questionId"));
-  const officialResult = Number(formData.get("officialResult"));
+
+  // Number("") is 0, which would silently treat empty input as 0 — explicitly
+  // reject empty/whitespace before we coerce.
+  const officialResultRaw = String(formData.get("officialResult") ?? "").trim();
+  if (officialResultRaw === "") redirect("/admin?error=missing_result");
+  const officialResult = Number(officialResultRaw);
   if (!Number.isFinite(questionId) || !Number.isFinite(officialResult)) {
-    redirect("/admin?error=invalid_input");
+    redirect("/admin?error=invalid_result");
   }
+
+  let result;
   try {
-    await settleQuestion({ questionId, officialResult, actorUserId: actor });
+    result = await settleQuestion({ questionId, officialResult, actorUserId: actor });
   } catch (e) {
     if (e instanceof ContestError) redirect(`/admin?error=${e.code}`);
     throw e;
   }
+
   revalidatePath("/");
   revalidatePath("/results");
   revalidatePath("/admin");
-  redirect("/admin?ok=settled");
+
+  // No entries / void path: bounce with a different banner.
+  if (result.voided) redirect("/admin?ok=voided_no_entrants");
+  redirect(`/admin?settled=${result.settlementId}`);
 }
 
 // Delete a question. Cascade FKs clean up entries / settlements / skill_scores.
