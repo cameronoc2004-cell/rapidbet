@@ -19,17 +19,26 @@ export async function createQuestion(formData: FormData) {
   const actor = session?.profile?.id ?? null;
 
   const title = String(formData.get("title") ?? "").trim();
-  const window = String(formData.get("window") ?? "Q1") as WindowLabel;
-  const entryFeeUsd = Number(formData.get("entryFeeUsd") ?? 1);
+  const window = String(formData.get("window") ?? "").trim() as WindowLabel;
+  const entryFeeRaw = String(formData.get("entryFeeUsd") ?? "").trim();
   const locksAt = String(formData.get("locksAt") ?? "").trim();
   const gameIdRaw = String(formData.get("gameId") ?? "").trim();
 
   if (!title) redirect("/admin?error=missing_title");
-  if (!locksAt) redirect("/admin?error=missing_locks_at");
-  if (!Number.isFinite(entryFeeUsd) || entryFeeUsd <= 0)
-    redirect("/admin?error=invalid_fee");
+  if (!gameIdRaw) redirect("/admin?error=missing_game");
+  if (!window) redirect("/admin?error=missing_window");
   if (!["Q1", "Q2", "Q3", "Q4", "OT", "GAME"].includes(window))
     redirect("/admin?error=invalid_window");
+  if (!locksAt) redirect("/admin?error=missing_locks_at");
+  // Reject unparseable datetime strings (browser usually catches this but
+  // be safe against direct form posts).
+  const locksAtDate = new Date(locksAt);
+  if (Number.isNaN(locksAtDate.getTime())) redirect("/admin?error=invalid_locks_at");
+
+  if (!entryFeeRaw) redirect("/admin?error=missing_fee");
+  const entryFeeUsd = Number(entryFeeRaw);
+  if (!Number.isFinite(entryFeeUsd) || entryFeeUsd <= 0)
+    redirect("/admin?error=invalid_fee");
 
   // Server-side dedupe: if the same admin posted an identical title within
   // the last 30 seconds, treat it as a double-click and short-circuit.
@@ -49,12 +58,16 @@ export async function createQuestion(formData: FormData) {
     redirect("/admin?ok=created");
   }
 
-  // Resolve the game. If admin picked "new", auto-create a quick one.
+  // Resolve the game. If admin picked "new", every new-game field is required;
+  // no silent defaults.
   let gameId: number;
   if (gameIdRaw === "new") {
-    const newLeague = String(formData.get("newLeague") ?? "Custom").trim() || "Custom";
-    const newHome = String(formData.get("newHome") ?? TEAM_NAME).trim() || TEAM_NAME;
-    const newAway = String(formData.get("newAway") ?? "Opponent").trim() || "Opponent";
+    const newLeague = String(formData.get("newLeague") ?? "").trim();
+    const newAway = String(formData.get("newAway") ?? "").trim();
+    const newHome = String(formData.get("newHome") ?? "").trim();
+    if (!newLeague) redirect("/admin?error=missing_new_league");
+    if (!newAway) redirect("/admin?error=missing_new_away");
+    if (!newHome) redirect("/admin?error=missing_new_home");
     const [g] = await db
       .insert(games)
       .values({
@@ -68,7 +81,7 @@ export async function createQuestion(formData: FormData) {
     gameId = g.id;
   } else {
     const id = Number(gameIdRaw);
-    if (!Number.isInteger(id)) redirect("/admin?error=missing_game");
+    if (!Number.isInteger(id)) redirect("/admin?error=invalid_game");
     gameId = id;
   }
 
@@ -83,7 +96,7 @@ export async function createQuestion(formData: FormData) {
       entryFeeMinor: Math.round(entryFeeUsd * 100),
       moneyKind: "virtual",
       minEntrants: 2,
-      locksAt: new Date(locksAt),
+      locksAt: locksAtDate,
       createdBy: actor ?? null,
     })
     .returning();

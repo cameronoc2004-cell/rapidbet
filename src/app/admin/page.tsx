@@ -16,11 +16,18 @@ const OK: Record<string, string> = {
   voided_no_entrants: "Voided — no entrants when you settled.",
 };
 const ERR: Record<string, string> = {
-  missing_title: "Question can't be empty.",
-  missing_locks_at: "Pick a lock time.",
+  missing_title: "Enter the question.",
   missing_game: "Pick a game.",
-  invalid_fee: "Entry fee must be > 0.",
-  invalid_window: "Pick a quarter.",
+  invalid_game: "That game doesn't exist.",
+  missing_window: "Pick a quarter.",
+  invalid_window: "Pick a valid quarter.",
+  missing_locks_at: "Pick a lock time.",
+  invalid_locks_at: "Lock time isn't a valid date.",
+  missing_fee: "Enter an entry fee.",
+  invalid_fee: "Entry fee must be greater than $0.",
+  missing_new_league: "Enter the league for the new game.",
+  missing_new_away: "Enter the away team for the new game.",
+  missing_new_home: "Enter the home team for the new game.",
   invalid_input: "Invalid input.",
   missing_result: "Enter the official result before settling.",
   invalid_result: "Official result must be a number.",
@@ -191,9 +198,9 @@ export default async function AdminPage({
           </label>
         </div>
 
-        <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)]/60 px-4 py-3">
+        <details open className="rounded-lg border border-[var(--border)] bg-[var(--surface)]/60 px-4 py-3">
           <summary className="cursor-pointer text-xs text-[var(--text-muted)]">
-            New game fields (used only if Game = + New game)
+            New game fields — required if Game = <span className="text-[var(--text)]">+ New game</span>
           </summary>
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <input
