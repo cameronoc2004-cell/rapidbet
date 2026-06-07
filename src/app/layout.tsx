@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/top-bar";
@@ -78,20 +77,10 @@ export default async function RootLayout({
         <main className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4 pt-3 sm:pt-4">
           {children}
         </main>
-        {!showTabs && (
-          <footer
-            className="border-t border-[var(--border)]"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          >
-            <div className="mx-auto flex max-w-3xl items-center justify-center gap-4 px-4 py-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              <Link href="/terms" className="hover:text-white">Terms</Link>
-              <span>·</span>
-              <Link href="/privacy" className="hover:text-white">Privacy</Link>
-              <span>·</span>
-              <span>© Rallypot</span>
-            </div>
-          </footer>
-        )}
+        {/* No global footer — pages that want Terms/Privacy links render
+            them inline (see /login). Avoids the duplicate row issue and
+            keeps long-form legal pages from rendering a footer that
+            duplicates their own copy. */}
         {showTabs && <BottomTabBar />}
       </body>
     </html>

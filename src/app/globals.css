@@ -48,6 +48,12 @@
 html, body {
   background: var(--bg);
   color: var(--text);
+  /* Kill iOS rubber-band overscroll on the document. Without this, dragging
+     down at the top of the page lets the document slide below the viewport
+     top edge — the sticky top bar moves with it and a black gap appears
+     above "Rallypot · skill contests". With overscroll-behavior:none the
+     bar stays put. */
+  overscroll-behavior-y: none;
 }
 
 body {
