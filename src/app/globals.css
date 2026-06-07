@@ -13,6 +13,13 @@
   --surface-2: #1A201D;   /* inputs, secondary surfaces */
   --border: #242B28;
 
+  /* Chrome metrics. --topbar-h is the total visual height of the
+     fixed top bar (safe area inset + inner content row). Used by the
+     layout to add equivalent top padding to <main> so content sits
+     directly below the bar, never under it. Bump this if the top bar
+     visually changes height. */
+  --topbar-h: calc(env(safe-area-inset-top) + 50px);
+
   /* Energy */
   --primary: #16C784;     /* money green */
   --primary-hi: #2BE39A;

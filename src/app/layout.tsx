@@ -74,7 +74,14 @@ export default async function RootLayout({
       */}
       <body className="flex min-h-dvh flex-col overflow-x-hidden bg-[var(--bg)] text-[var(--text)]">
         <TopBar />
-        <main className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4 pt-3 sm:pt-4">
+        {/* Top padding compensates for the fixed top bar. The CSS variable
+            --topbar-h is the bar's visual height (safe-area + inner row).
+            Without this offset, page content would render underneath the
+            fixed header. */}
+        <main
+          className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4"
+          style={{ paddingTop: "calc(var(--topbar-h) + 0.5rem)" }}
+        >
           {children}
         </main>
         {/* No global footer — pages that want Terms/Privacy links render
