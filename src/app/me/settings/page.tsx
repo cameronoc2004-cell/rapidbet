@@ -8,6 +8,7 @@ const ERR: Record<string, string> = {
   missing_username: "Enter a username.",
   invalid_username: "Usernames are 3–20 characters: letters, numbers, underscore, period.",
   username_taken: "That username is already taken.",
+  phone_taken: "That phone number is already linked to another Rallypot account.",
   invalid_phone: "Enter a valid phone number (10–15 digits).",
   invalid_postal: "Enter a valid US ZIP code (12345 or 12345-6789).",
 };

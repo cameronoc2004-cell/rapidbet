@@ -99,7 +99,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
                     .
                   </span>
                 </label>
-                {error && ERRORS[error] && <ErrorBanner text={ERRORS[error]} />}
+                {error === "email_taken" ? (
+                  <EmailTakenBanner />
+                ) : error && ERRORS[error] ? (
+                  <ErrorBanner text={ERRORS[error]} />
+                ) : null}
                 <SubmitButton>Create account</SubmitButton>
                 <p className="pt-2 text-center text-[11px] text-[var(--text-muted)]">
                   We&apos;ll send a verification link to your email.
@@ -259,6 +263,25 @@ function ErrorBanner({ text }: { text: string }) {
     <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
       {text}
     </p>
+  );
+}
+
+// Special-case the "already have an account" path. A plain "email taken"
+// banner forces the user to figure out they need to switch to the Sign in
+// tab. Surface the sign-in CTA inline so it's one tap.
+function EmailTakenBanner() {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3 space-y-2">
+      <p className="text-sm text-[var(--text)]">
+        You already have a Rallypot account with that email.
+      </p>
+      <Link
+        href="/login"
+        className="block w-full rounded-md bg-[var(--primary)] px-3 py-2 text-center text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
+      >
+        Sign in instead
+      </Link>
+    </div>
   );
 }
 

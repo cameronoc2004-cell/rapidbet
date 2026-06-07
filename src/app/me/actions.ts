@@ -65,17 +65,38 @@ export async function updateProfile(formData: FormData) {
     .limit(1);
   if (conflict.length > 0) redirect("/me/settings?error=username_taken");
 
-  await db
-    .update(profiles)
-    .set({
-      username: lower,
-      phone,
-      addressLine1: line1 || null,
-      addressLine2: line2 || null,
-      city: city || null,
-      postalCode,
-    })
-    .where(eq(profiles.id, userId));
+  // Phone uniqueness: one phone per account, ever. Compared on the canonical
+  // (digits-only / + prefix) string so "+1 555 1234" and "+15551234" collide.
+  if (phone) {
+    const phoneClash = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(and(eq(profiles.phone, phone), ne(profiles.id, userId)))
+      .limit(1);
+    if (phoneClash.length > 0) redirect("/me/settings?error=phone_taken");
+  }
+
+  try {
+    await db
+      .update(profiles)
+      .set({
+        username: lower,
+        phone,
+        addressLine1: line1 || null,
+        addressLine2: line2 || null,
+        city: city || null,
+        postalCode,
+      })
+      .where(eq(profiles.id, userId));
+  } catch (e) {
+    // Race condition belt-and-suspenders: a concurrent save could slip past
+    // the explicit uniqueness check above. The DB-level UNIQUE constraints
+    // on profiles.username and profiles.phone backstop it.
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("profiles_username")) redirect("/me/settings?error=username_taken");
+    if (msg.includes("profiles_phone")) redirect("/me/settings?error=phone_taken");
+    throw e;
+  }
 
   await logAudit({
     actorUserId: userId,

@@ -101,7 +101,7 @@ export const profiles = pgTable("profiles", {
   // store as text and validate in the action rather than coupling the DB to
   // a specific format. Address is a flat US-style block — state lives in
   // stateCode above (re-verified via GPS, not user-editable here).
-  phone: text("phone"),
+  phone: text("phone").unique(),
   addressLine1: text("address_line1"),
   addressLine2: text("address_line2"),
   city: text("city"),
