@@ -97,6 +97,15 @@ export const profiles = pgTable("profiles", {
   // Verified prompt. Suppresses the modal only — verification is still
   // required to enter contests; the user re-triggers it from /me.
   kycPromptDismissedAt: timestamp("kyc_prompt_dismissed_at", { withTimezone: true }),
+  // Editable user contact info. E.164 for phone (e.g. "+15551234567"); we
+  // store as text and validate in the action rather than coupling the DB to
+  // a specific format. Address is a flat US-style block — state lives in
+  // stateCode above (re-verified via GPS, not user-editable here).
+  phone: text("phone"),
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  city: text("city"),
+  postalCode: text("postal_code"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),

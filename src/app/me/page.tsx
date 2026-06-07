@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries } from "@/db/schema";
@@ -50,6 +51,14 @@ export default async function MePage({
         <HeroStat label="Picks" value={myEntries.length.toLocaleString()} />
         <HeroStat label="Won" value={formatMoney(totalWonMinor)} />
       </section>
+
+      <Link
+        href="/me/settings"
+        className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text)] transition-colors hover:border-[var(--primary-lo)]"
+      >
+        <span>Edit profile</span>
+        <span className="text-[var(--text-muted)]">→</span>
+      </Link>
     </div>
   );
 }

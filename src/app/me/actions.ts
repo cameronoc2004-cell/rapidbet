@@ -2,13 +2,95 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db/client";
 import { auditLogs, profiles, questions, settlements } from "@/db/schema";
 import { getCurrentProfileId, getCurrentSession } from "@/lib/session";
 import { logAudit } from "@/db/audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
+// Edit username + contact info. Validates each field; an empty/whitespace
+// value clears the optional fields (phone/address) so the user can wipe
+// data they previously entered.
+//
+// Username is uniqueness-checked case-insensitively against other profiles.
+// Email + DOB + state are intentionally NOT here: email changes through
+// Supabase Auth, DOB is fixed once the user proves age (would let users
+// circumvent the age gate), state is GPS-verified.
+export async function updateProfile(formData: FormData) {
+  const userId = await getCurrentProfileId();
+  if (!userId) redirect("/login");
+
+  const usernameRaw = String(formData.get("username") ?? "").trim();
+  const phoneRaw = String(formData.get("phone") ?? "").trim();
+  const line1 = String(formData.get("addressLine1") ?? "").trim();
+  const line2 = String(formData.get("addressLine2") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const postalRaw = String(formData.get("postalCode") ?? "").trim();
+
+  // Username: 3-20 chars, alphanumerics + underscore + period only. No spaces.
+  if (!usernameRaw) redirect("/me/settings?error=missing_username");
+  if (!/^[A-Za-z0-9._]{3,20}$/.test(usernameRaw)) {
+    redirect("/me/settings?error=invalid_username");
+  }
+
+  // Phone: optional. If set, strip everything but digits/+ and require 10-15
+  // digits after the optional leading +. We don't enforce country.
+  let phone: string | null = null;
+  if (phoneRaw) {
+    const compact = phoneRaw.replace(/[\s()-]/g, "");
+    if (!/^\+?\d{10,15}$/.test(compact)) {
+      redirect("/me/settings?error=invalid_phone");
+    }
+    phone = compact;
+  }
+
+  // Postal code: optional, US-style 5 or 9 digits ("12345" or "12345-6789").
+  let postalCode: string | null = null;
+  if (postalRaw) {
+    if (!/^\d{5}(-\d{4})?$/.test(postalRaw)) {
+      redirect("/me/settings?error=invalid_postal");
+    }
+    postalCode = postalRaw;
+  }
+
+  // Uniqueness check (case-insensitive) against other profiles.
+  const lower = usernameRaw.toLowerCase();
+  const conflict = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.username, lower), ne(profiles.id, userId)))
+    .limit(1);
+  if (conflict.length > 0) redirect("/me/settings?error=username_taken");
+
+  await db
+    .update(profiles)
+    .set({
+      username: lower,
+      phone,
+      addressLine1: line1 || null,
+      addressLine2: line2 || null,
+      city: city || null,
+      postalCode,
+    })
+    .where(eq(profiles.id, userId));
+
+  await logAudit({
+    actorUserId: userId,
+    action: "user.update_profile",
+    refType: "profile",
+    refId: userId,
+    payload: {
+      changed: ["username", "phone", "addressLine1", "addressLine2", "city", "postalCode"],
+    },
+  });
+
+  revalidatePath("/me");
+  revalidatePath("/me/settings");
+  redirect("/me/settings?ok=updated");
+}
 
 export async function updateNotificationPrefs(formData: FormData) {
   const userId = await getCurrentProfileId();
@@ -89,9 +171,22 @@ export async function deleteAccount() {
     // anyway once we sign out below.
   }
 
-  // Drop the session cookies.
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  // Drop the session cookies. Once admin.deleteUser succeeded, the JWT is
+  // already invalid server-side; signOut() can still raise on the network
+  // round-trip. We catch + fall through to an explicit cookie wipe so a
+  // failed signOut never leaves the browser with stale auth state.
+  try {
+    const supabase = await createSupabaseServerClient();
+    await supabase.auth.signOut();
+  } catch {
+    // ignore — cookie wipe below handles it
+  }
+  const cookieStore = await cookies();
+  for (const c of cookieStore.getAll()) {
+    if (c.name.startsWith("sb-") || c.name.includes("supabase")) {
+      cookieStore.delete(c.name);
+    }
+  }
 
   redirect("/login?deleted=1");
 }

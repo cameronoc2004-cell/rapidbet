@@ -104,6 +104,14 @@ export function ProfileMenu(props: ProfileMenuProps) {
               <Expandable label="Account settings">
                 <div className="space-y-2 px-5 pb-4">
                   <Link
+                    href="/me/settings"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)]"
+                  >
+                    <span>Edit profile</span>
+                    <Chevron />
+                  </Link>
+                  <Link
                     href="/forgot-password"
                     onClick={() => setOpen(false)}
                     className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)]"
