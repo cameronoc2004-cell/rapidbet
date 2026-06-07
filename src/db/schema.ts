@@ -93,6 +93,10 @@ export const profiles = pgTable("profiles", {
   // Timestamp when user accepted Terms of Service + Privacy Policy at signup.
   // Required before account creation completes; logged for legal evidence.
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  // Set when the user clicks "Skip for now" on the post-onboarding Get
+  // Verified prompt. Suppresses the modal only — verification is still
+  // required to enter contests; the user re-triggers it from /me.
+  kycPromptDismissedAt: timestamp("kyc_prompt_dismissed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),

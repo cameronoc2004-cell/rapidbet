@@ -3,12 +3,17 @@ import { db } from "@/db/client";
 import { entries, games, questions } from "@/db/schema";
 import { EventList, type EventListItem } from "@/components/event-list";
 import { RefreshButton } from "@/components/refresh-button";
-import { requireOnboarded } from "@/lib/session";
+import { VerificationPrompt } from "@/components/verification-prompt";
+import { getVerificationStatus, requireOnboarded } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  await requireOnboarded();
+  const session = await requireOnboarded();
+  const verification = await getVerificationStatus(session.profile!.id);
+  const showVerifyPrompt =
+    verification.status === "none" && !verification.promptDismissed;
+  const isVerified = verification.status === "verified";
   // Find every game that has at least one open question.
   const rows = await db
     .select({
@@ -68,7 +73,8 @@ export default async function Home() {
         <RefreshButton label="Refresh events" autoRefreshMs={30_000} />
       </section>
 
-      <EventList items={items} />
+      <EventList items={items} verified={isVerified} />
+      {showVerifyPrompt && <VerificationPrompt />}
     </div>
   );
 }

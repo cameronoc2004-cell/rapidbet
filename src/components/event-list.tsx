@@ -18,9 +18,14 @@ export interface EventListItem {
 
 interface EventListProps {
   items: EventListItem[];
+  // When false, every event card shows a lock overlay and routes to the
+  // verification flow on /me instead of the contest page. The submit-entry
+  // server action also rejects unverified entrants — this is just the UI
+  // affordance so the gate is obvious before the user taps in.
+  verified?: boolean;
 }
 
-export function EventList({ items }: EventListProps) {
+export function EventList({ items, verified = true }: EventListProps) {
   if (items.length === 0) {
     return <EmptyEvents />;
   }
@@ -34,8 +39,9 @@ export function EventList({ items }: EventListProps) {
           transition={{ duration: 0.25, ease: "easeOut", delay: i * 0.05 }}
         >
           <Link
-            href={`/contest/${e.gameId}`}
-            className="group block rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--primary-lo)] focus-visible:border-[var(--primary)]"
+            href={verified ? `/contest/${e.gameId}` : "/me?verify=1"}
+            aria-disabled={!verified}
+            className="group relative block rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--primary-lo)] focus-visible:border-[var(--primary)]"
           >
             <div className="flex items-baseline justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -69,8 +75,9 @@ export function EventList({ items }: EventListProps) {
             </div>
 
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs text-[var(--text-muted)]">
-                Tap to view contests
+              <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                {!verified && <LockGlyph />}
+                {verified ? "Tap to view contests" : "Verify identity to enter"}
               </span>
               <span className="text-[var(--text-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--primary)]">
                 →
@@ -80,6 +87,27 @@ export function EventList({ items }: EventListProps) {
         </motion.li>
       ))}
     </ul>
+  );
+}
+
+function LockGlyph() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      className="text-[var(--text-muted)]"
+    >
+      <path
+        d="M6 9V6a4 4 0 1 1 8 0v3M4 9h12v8H4z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

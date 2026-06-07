@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions, settlements } from "@/db/schema";
-import { requireOnboarded } from "@/lib/session";
+import { getVerificationStatus, requireOnboarded } from "@/lib/session";
 import { submitPrediction, ContestError } from "@/lib/contest";
 import { InsufficientFundsError } from "@/db/wallet";
 import { revalidatePath } from "next/cache";
@@ -22,6 +22,14 @@ async function submitAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireOnboarded();
   const userId = session.profile!.id;
+
+  // KYC gate: every entry — virtual or real — requires a verified user.
+  // Page itself redirects unverified users to /me, but a direct POST would
+  // bypass that without this check.
+  const verification = await getVerificationStatus(userId);
+  if (verification.status !== "verified") {
+    throw new Error(humanize("must_verify"));
+  }
 
   const questionId = Number(formData.get("questionId"));
   const predictionValue = Number(formData.get("prediction"));
@@ -44,6 +52,7 @@ function humanize(code: string): string {
       not_open: "Entries for that question are not open.",
       locked: "That question has locked.",
       already_entered: "You already submitted a prediction.",
+      must_verify: "Verify your identity to enter contests.",
     }[code] ?? code
   );
 }
@@ -51,6 +60,8 @@ function humanize(code: string): string {
 export default async function ContestPage({ params, searchParams }: PageProps) {
   const session = await requireOnboarded();
   const userId = session.profile!.id;
+  const verification = await getVerificationStatus(userId);
+  if (verification.status !== "verified") redirect("/me?verify=1");
 
   const { gameId: gameIdRaw } = await params;
   const { celebrate } = await searchParams;

@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
-import { profiles } from "@/db/schema";
+import { kycRecords, profiles } from "@/db/schema";
 import { createSupabaseServerClient } from "./supabase/server";
 import { ADMIN_EMAILS, PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "./config";
 
@@ -59,6 +59,40 @@ export async function requireOnboarded() {
   const status = getOnboardingStatus(session);
   if (!status.complete) redirect("/onboarding");
   return session;
+}
+
+// Verification ("Get Verified") status, derived from kyc_records.
+//
+// Returns the most-recent kyc_records row's status for the profile, plus a
+// `promptDismissed` flag from profiles.kycPromptDismissedAt.
+//
+// Status values map to user-facing copy:
+//   verified -> "Verified" — can enter contests
+//   pending  -> "In review" — waiting on Didit decision
+//   rejected -> "Failed verification" — must retry
+//   expired  -> "Expired" — must re-verify
+//   none     -> "Not verified" — never started
+export interface VerificationStatus {
+  status: "verified" | "pending" | "rejected" | "expired" | "none";
+  promptDismissed: boolean;
+}
+
+export async function getVerificationStatus(profileId: number): Promise<VerificationStatus> {
+  const [profile] = await db
+    .select({ dismissedAt: profiles.kycPromptDismissedAt })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
+  const promptDismissed = !!profile?.dismissedAt;
+
+  const [latest] = await db
+    .select({ status: kycRecords.status })
+    .from(kycRecords)
+    .where(eq(kycRecords.userId, profileId))
+    .orderBy(desc(kycRecords.createdAt))
+    .limit(1);
+  const status = (latest?.status ?? "none") as VerificationStatus["status"];
+  return { status, promptDismissed };
 }
 
 // Used by /onboarding itself: needs auth but onboarding may be incomplete.
