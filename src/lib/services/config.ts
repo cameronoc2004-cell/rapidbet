@@ -34,8 +34,12 @@ export const services = {
   didit: {
     env: (process.env.DIDIT_ENV ?? "sandbox") as "sandbox" | "production",
     apiKey: process.env.DIDIT_API_KEY ?? "",
-    // Used to verify webhook HMAC signatures.
+    // Sandbox vs production is determined by which API key you use; the
+    // session-create host is the same.
     webhookSecret: process.env.DIDIT_WEBHOOK_SECRET ?? "",
+    // UUID of the workflow configured in business.didit.me. Required on every
+    // session-create call — defines which steps the session runs.
+    workflowId: process.env.DIDIT_WORKFLOW_ID ?? "",
   },
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
@@ -66,5 +70,5 @@ export function isTrustlyConfigured(): boolean {
   );
 }
 export function isDiditConfigured(): boolean {
-  return !!services.didit.apiKey;
+  return !!services.didit.apiKey && !!services.didit.workflowId;
 }

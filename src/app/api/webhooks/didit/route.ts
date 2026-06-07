@@ -6,22 +6,30 @@ import { kycRecords } from "@/db/schema";
 import { logAudit } from "@/db/audit";
 import { services } from "@/lib/services/config";
 
-// Didit webhook: HMAC-SHA256 over the raw body using the shared secret. Reject
-// anything we cannot verify — a spoofed "approved" event would bypass KYC.
+// Didit webhook handler.
 //
-// Header name varies by Didit version; check the dashboard webhook config.
-// TODO(vendor): confirm exact header + signing algorithm against current docs.
+// Signature: Didit sends three HMAC-SHA256 variants over the request — we
+// verify X-Signature (raw bytes), the most reliable in Next.js where we can
+// read the unparsed body. X-Timestamp must be within 5 min to block replays.
+// Reject anything we cannot verify — a spoofed "approved" event would bypass
+// KYC and let an unverified user enter real-money contests.
+const TIMESTAMP_TOLERANCE_SECONDS = 300;
+
 export async function POST(req: NextRequest) {
   const raw = await req.text();
-  const signature =
-    req.headers.get("x-didit-signature") ??
-    req.headers.get("didit-signature") ??
-    req.headers.get("x-signature") ??
-    "";
+  const signature = req.headers.get("x-signature") ?? "";
+  const timestamp = req.headers.get("x-timestamp") ?? "";
 
   if (!services.didit.webhookSecret) {
     console.error("[didit] webhook hit without DIDIT_WEBHOOK_SECRET configured");
     return NextResponse.json({ error: "server_not_configured" }, { status: 500 });
+  }
+
+  // Replay protection: reject anything older than 5 min.
+  const tsSec = Number(timestamp);
+  if (!Number.isFinite(tsSec) || Math.abs(Date.now() / 1000 - tsSec) > TIMESTAMP_TOLERANCE_SECONDS) {
+    await logAudit({ action: "didit.webhook.stale_timestamp", payload: { timestamp } });
+    return NextResponse.json({ error: "stale_timestamp" }, { status: 401 });
   }
 
   const expected = crypto
@@ -35,8 +43,9 @@ export async function POST(req: NextRequest) {
 
   let event: {
     session_id?: string;
-    status?: string;          // approved / declined / pending / expired
-    vendor_data?: string;     // we passed userId here at session create
+    status?: string;            // Approved / Declined / In Review / In Progress / Not Started / Abandoned / Expired / KYC Expired / Resubmitted
+    webhook_type?: string;      // "status.updated" etc.
+    vendor_data?: string;       // we passed userId here at session create
     age_eligible?: boolean;
     jurisdiction?: string;
     expires_at?: string;
@@ -65,14 +74,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Normalize Didit's status into our enum.
+  // "In Review" is a human-review hold — not approved yet, but not declined.
+  // "Abandoned" / "Expired" / "KYC Expired" mean the user has to start over.
+  const s = (event.status ?? "").toLowerCase();
   const decision: "approved" | "declined" | "pending" | "expired" =
-    event.status === "Approved" || event.status === "approved"
-      ? "approved"
-      : event.status === "Declined" || event.status === "declined"
-      ? "declined"
-      : event.status === "Expired"
-      ? "expired"
-      : "pending";
+    s === "approved" ? "approved"
+    : s === "declined" ? "declined"
+    : s === "expired" || s === "kyc expired" || s === "abandoned" ? "expired"
+    : "pending";
 
   // Map our normalized decision into the schema enum (uses "rejected" not "declined").
   const persisted: "verified" | "pending" | "rejected" | "expired" =
