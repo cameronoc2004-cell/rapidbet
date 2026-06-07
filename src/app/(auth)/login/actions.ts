@@ -85,7 +85,24 @@ export async function signUp(formData: FormData) {
     },
   });
   if (error || !data.user) {
-    const code = error?.message?.includes("already") ? "email_taken" : "signup_failed";
+    // Log the *actual* Supabase reason — past iterations silently bucketed
+    // every non-"already exists" failure into a useless generic banner.
+    // Common ones we surface explicitly:
+    //   - rate_limited:    Supabase email throttle hit (default 30/hr).
+    //   - smtp_failure:    custom SMTP rejected the confirmation send.
+    //   - signups_disabled: Auth settings have signups turned off.
+    //   - email_taken:     account already exists.
+    console.error(
+      "[signup] supabase.auth.signUp failed:",
+      JSON.stringify({ email, error: error?.message, status: error?.status }),
+    );
+    const msg = (error?.message ?? "").toLowerCase();
+    let code = "signup_failed";
+    if (msg.includes("already")) code = "email_taken";
+    else if (msg.includes("rate") || msg.includes("for security")) code = "rate_limited";
+    else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("confirmation"))
+      code = "smtp_failure";
+    else if (msg.includes("disabled")) code = "signups_disabled";
     redirect(`/login?mode=signup&error=${code}`);
   }
 
