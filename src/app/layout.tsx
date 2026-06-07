@@ -58,20 +58,31 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full`}
+      className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text)] overflow-x-hidden">
+      {/*
+        Mobile-first viewport plumbing:
+        - min-h-dvh (dynamic viewport height) so empty pages fill the
+          visible viewport correctly on iOS Safari where the address bar
+          shrinks/grows. min-h-screen / 100vh measures the *largest*
+          viewport and causes content to bleed under the address bar.
+        - overflow-x-hidden is a guard so a mis-sized child can't
+          horizontally scroll the page.
+        - The body is a flex column; <main> takes flex-1 so the
+          BottomTabBar — now a normal-flow sticky sibling — naturally
+          sits at the bottom on short pages without needing a magic
+          pb-20 offset on every page.
+      */}
+      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-[var(--bg)] text-[var(--text)]">
         <TopBar />
-        <main
-          className={
-            "mx-auto w-full max-w-3xl flex-1 px-4 pt-3 sm:pt-4 min-w-0 " +
-            (showTabs ? "pb-20" : "pb-8")
-          }
-        >
+        <main className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4 pt-3 sm:pt-4">
           {children}
         </main>
         {!showTabs && (
-          <footer className="border-t border-[var(--border)] safe-bottom">
+          <footer
+            className="border-t border-[var(--border)]"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
             <div className="mx-auto flex max-w-3xl items-center justify-center gap-4 px-4 py-4 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
               <Link href="/terms" className="hover:text-white">Terms</Link>
               <span>·</span>

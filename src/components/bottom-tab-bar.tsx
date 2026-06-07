@@ -31,19 +31,29 @@ const TABS: Tab[] = [
   },
 ];
 
-// iOS-style full-width tab bar flush to the bottom edge of the screen.
-// Internal safe-area-inset-bottom keeps icons + labels above the home
-// indicator. Active tab is colored green; inactive is muted. No floating
-// pill — matches native iOS Tab Bar conventions.
+// iOS-style full-width tab bar pinned to the bottom edge.
+//
+// Layout choices:
+// - sticky bottom-0, not position: fixed. The body is min-h-dvh + flex-col
+//   and the tab bar is the last child after a flex-1 <main>; sticky keeps
+//   it pinned to the viewport bottom during scroll without overlaying
+//   content, and (unlike fixed) it gets pushed up by the iOS software
+//   keyboard instead of fighting it.
+// - Inner container max-w-3xl mirrors the main content + top bar so the
+//   tab bar's tap regions sit under the same column on tablet/desktop.
+// - py-3 keeps every tap target ≥ 44×44px (icon ~22 + label + 24px
+//   vertical padding).
+// - env(safe-area-inset-bottom) padding clears the home indicator.
 export function BottomTabBar() {
   const pathname = usePathname();
 
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-xl"
+      className="sticky bottom-0 z-30 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-xl"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto flex max-w-md items-stretch">
+      <div className="mx-auto flex max-w-3xl items-stretch">
         {TABS.map((tab) => {
           const active = tab.match(pathname);
           return (
@@ -52,8 +62,8 @@ export function BottomTabBar() {
               href={tab.href}
               aria-current={active ? "page" : undefined}
               className={
-                "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors " +
-                (active ? "text-[var(--primary)]" : "text-[var(--text-muted)] hover:text-white")
+                "flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-3 transition-colors " +
+                (active ? "text-[var(--primary)]" : "text-[var(--text-muted)] hover:text-[var(--text)]")
               }
             >
               {tab.icon(active)}
