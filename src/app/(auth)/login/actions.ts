@@ -37,14 +37,16 @@ async function deriveUniqueUsername(email: string): Promise<string> {
 }
 
 // Build the absolute URL we want Supabase to send the user back to after they
-// click the confirmation link. Includes /auth/callback?next=/onboarding so the
-// route handler exchanges the code and routes them into the gates flow.
+// click the confirmation link. Includes /auth/callback?next=/auth/confirmed
+// so the route handler exchanges the code (which is what actually flips
+// email_confirmed_at), signs them back out, and lands them on a static
+// "your email is confirmed" page with a "Back to the app" CTA.
 async function emailCallbackUrl(): Promise<string> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "https";
   const origin = host ? `${proto}://${host}` : "http://localhost:3000";
-  return `${origin}/auth/callback?next=/onboarding`;
+  return `${origin}/auth/callback?next=/auth/confirmed`;
 }
 
 export async function signUp(formData: FormData) {
