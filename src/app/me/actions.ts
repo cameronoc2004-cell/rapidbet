@@ -24,8 +24,10 @@ export async function updateProfile(formData: FormData) {
   if (!userId) redirect("/login");
 
   const usernameRaw = String(formData.get("username") ?? "").trim();
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
+  // Normalize curly apostrophe → straight apostrophe so iOS autocorrect
+  // (' → ’) doesn't fail validation.
+  const firstName = String(formData.get("firstName") ?? "").trim().replace(/’/g, "'");
+  const lastName = String(formData.get("lastName") ?? "").trim().replace(/’/g, "'");
   const phoneRaw = String(formData.get("phone") ?? "").trim();
   const line1 = String(formData.get("addressLine1") ?? "").trim();
   const line2 = String(formData.get("addressLine2") ?? "").trim();
@@ -40,7 +42,10 @@ export async function updateProfile(formData: FormData) {
   // Real name: required, 1-50 chars, letters + spaces/hyphens/apostrophes/periods.
   if (!firstName) redirect("/me/settings?error=missing_first_name");
   if (!lastName) redirect("/me/settings?error=missing_last_name");
-  const nameRe = /^[A-Za-zÀ-ÿ' .-]{1,50}$/;
+  // Unicode-aware. \p{L} = any letter, \p{M} = combining marks (some
+  // diacritics decompose into letter + mark). Accept straight + curly
+  // apostrophes since iOS autocorrects between them.
+  const nameRe = /^[\p{L}\p{M}' ’.-]{1,50}$/u;
   if (!nameRe.test(firstName)) redirect("/me/settings?error=invalid_first_name");
   if (!nameRe.test(lastName)) redirect("/me/settings?error=invalid_last_name");
 

@@ -79,7 +79,6 @@ export default async function LoginPage({ searchParams }: PageProps) {
                     name="firstName"
                     type="text"
                     autoComplete="given-name"
-                    placeholder="Jane"
                     required
                   />
                   <Field
@@ -87,7 +86,6 @@ export default async function LoginPage({ searchParams }: PageProps) {
                     name="lastName"
                     type="text"
                     autoComplete="family-name"
-                    placeholder="Doe"
                     required
                   />
                 </div>

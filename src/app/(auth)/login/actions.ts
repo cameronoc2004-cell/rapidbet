@@ -54,16 +54,25 @@ async function emailCallbackUrl(): Promise<string> {
 // that would otherwise burn a Supabase rate-limit slot.
 const EMAIL_RE = /^[A-Za-z0-9](?:[A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/;
 
-// Real-name fields: allow letters, spaces, hyphens, apostrophes, periods.
-// Reject digits and underscores so a username doesn't slip in here.
-const NAME_RE = /^[A-Za-zÀ-ÿ' .-]{1,50}$/;
+// Real-name fields: letters from any script, combining marks (accents),
+// straight + curly apostrophes (iOS autocorrects ' → ’ silently — the
+// previous regex rejected curly quotes so names like "O'Connell" appeared
+// invalid after autocorrect), spaces, periods, hyphens. No digits, no
+// underscores.
+const NAME_RE = /^[\p{L}\p{M}' ’.-]{1,50}$/u;
+
+// Normalize curly apostrophes to straight ones so the DB has one canonical
+// form regardless of which keyboard typed it.
+function normalizeName(s: string): string {
+  return s.replace(/’/g, "'");
+}
 
 export async function signUp(formData: FormData) {
   const email = field(formData, "email").toLowerCase();
   const password = field(formData, "password");
   const confirmPassword = field(formData, "confirmPassword");
-  const firstName = field(formData, "firstName");
-  const lastName = field(formData, "lastName");
+  const firstName = normalizeName(field(formData, "firstName"));
+  const lastName = normalizeName(field(formData, "lastName"));
   // Required: checkbox must be checked. Browsers only send "on" when checked.
   const termsAccepted = formData.get("acceptTerms") === "on";
 
