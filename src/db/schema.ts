@@ -97,6 +97,11 @@ export const profiles = pgTable("profiles", {
   // Verified prompt. Suppresses the modal only — verification is still
   // required to enter contests; the user re-triggers it from /me.
   kycPromptDismissedAt: timestamp("kyc_prompt_dismissed_at", { withTimezone: true }),
+  // Real legal name. Collected at signup; needed for any future KYC
+  // bind-out, tax forms, and just so the operator knows who their
+  // entrants are. Display name (username) is separate.
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   // Editable user contact info. E.164 for phone (e.g. "+15551234567"); we
   // store as text and validate in the action rather than coupling the DB to
   // a specific format. Address is a flat US-style block — state lives in

@@ -14,6 +14,10 @@ const ERRORS: Record<string, string> = {
   rate_limited: "Too many signups from this email recently. Wait a minute and try again.",
   smtp_failure: "We couldn't send the confirmation email. The team is being notified — try again in a few minutes.",
   signups_disabled: "Signups are temporarily paused. Try again soon.",
+  missing_first_name: "Enter your first name.",
+  missing_last_name: "Enter your last name.",
+  invalid_first_name: "First name has invalid characters.",
+  invalid_last_name: "Last name has invalid characters.",
   verify_failed: "That confirmation link is expired or already used.",
   missing_code: "Confirmation link was missing its code.",
   terms_required: "You must agree to the Terms of Service and Privacy Policy.",
@@ -69,11 +73,36 @@ export default async function LoginPage({ searchParams }: PageProps) {
           <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
             {mode === "signup" ? (
               <form action={signUp} className="space-y-3">
-                <Field label="Email" name="email" type="email" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    label="First name"
+                    name="firstName"
+                    type="text"
+                    autoComplete="given-name"
+                    placeholder="Jane"
+                    required
+                  />
+                  <Field
+                    label="Last name"
+                    name="lastName"
+                    type="text"
+                    autoComplete="family-name"
+                    placeholder="Doe"
+                    required
+                  />
+                </div>
+                <Field
+                  label="Email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                />
                 <Field
                   label="Password"
                   name="password"
                   type="password"
+                  autoComplete="new-password"
                   placeholder="At least 8 characters"
                   required
                 />
@@ -81,6 +110,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
                   label="Confirm password"
                   name="confirmPassword"
                   type="password"
+                  autoComplete="new-password"
                   required
                 />
                 <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 transition-colors hover:border-[var(--primary-lo)]/60">
@@ -237,12 +267,14 @@ function Field({
   type = "text",
   required,
   placeholder,
+  autoComplete,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   placeholder?: string;
+  autoComplete?: string;
 }) {
   return (
     <label className="block">
@@ -254,7 +286,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
-        autoComplete={type === "password" ? "current-password" : name}
+        autoComplete={autoComplete ?? (type === "password" ? "current-password" : name)}
         className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]/70 focus:border-[var(--primary)]"
       />
     </label>

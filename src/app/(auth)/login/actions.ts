@@ -49,17 +49,32 @@ async function emailCallbackUrl(): Promise<string> {
   return `${origin}/auth/callback?next=/auth/confirmed`;
 }
 
+// Slightly stricter than HTML5 type="email": requires a TLD of 2+ letters,
+// no leading/trailing dots in the local part, no whitespace. Catches typos
+// that would otherwise burn a Supabase rate-limit slot.
+const EMAIL_RE = /^[A-Za-z0-9](?:[A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/;
+
+// Real-name fields: allow letters, spaces, hyphens, apostrophes, periods.
+// Reject digits and underscores so a username doesn't slip in here.
+const NAME_RE = /^[A-Za-zÀ-ÿ' .-]{1,50}$/;
+
 export async function signUp(formData: FormData) {
   const email = field(formData, "email").toLowerCase();
   const password = field(formData, "password");
   const confirmPassword = field(formData, "confirmPassword");
+  const firstName = field(formData, "firstName");
+  const lastName = field(formData, "lastName");
   // Required: checkbox must be checked. Browsers only send "on" when checked.
   const termsAccepted = formData.get("acceptTerms") === "on";
 
   if (!termsAccepted) {
     redirect("/login?mode=signup&error=terms_required");
   }
-  if (!email.includes("@")) {
+  if (!firstName) redirect("/login?mode=signup&error=missing_first_name");
+  if (!lastName) redirect("/login?mode=signup&error=missing_last_name");
+  if (!NAME_RE.test(firstName)) redirect("/login?mode=signup&error=invalid_first_name");
+  if (!NAME_RE.test(lastName)) redirect("/login?mode=signup&error=invalid_last_name");
+  if (!EMAIL_RE.test(email)) {
     redirect("/login?mode=signup&error=invalid_email");
   }
   if (password.length < 8) {
@@ -124,6 +139,8 @@ export async function signUp(formData: FormData) {
       .values({
         authUserId: data.user!.id,
         username,
+        firstName,
+        lastName,
         termsAcceptedAt: new Date(),
       })
       .returning();

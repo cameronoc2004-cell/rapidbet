@@ -11,6 +11,10 @@ const ERR: Record<string, string> = {
   phone_taken: "That phone number is already linked to another Rallypot account.",
   invalid_phone: "Enter a valid phone number (10–15 digits).",
   invalid_postal: "Enter a valid US ZIP code (12345 or 12345-6789).",
+  missing_first_name: "Enter your first name.",
+  missing_last_name: "Enter your last name.",
+  invalid_first_name: "First name has invalid characters.",
+  invalid_last_name: "Last name has invalid characters.",
 };
 
 const OK: Record<string, string> = {
@@ -57,6 +61,24 @@ export default async function SettingsPage({
 
       <form action={updateProfile} className="space-y-6">
         <Section title="Account">
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              name="firstName"
+              label="First name"
+              defaultValue={profile.firstName ?? ""}
+              required
+              autoComplete="given-name"
+              placeholder="Jane"
+            />
+            <Field
+              name="lastName"
+              label="Last name"
+              defaultValue={profile.lastName ?? ""}
+              required
+              autoComplete="family-name"
+              placeholder="Doe"
+            />
+          </div>
           <Field
             name="username"
             label="Username"

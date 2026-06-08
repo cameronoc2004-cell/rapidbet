@@ -24,6 +24,8 @@ export async function updateProfile(formData: FormData) {
   if (!userId) redirect("/login");
 
   const usernameRaw = String(formData.get("username") ?? "").trim();
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
   const phoneRaw = String(formData.get("phone") ?? "").trim();
   const line1 = String(formData.get("addressLine1") ?? "").trim();
   const line2 = String(formData.get("addressLine2") ?? "").trim();
@@ -35,6 +37,12 @@ export async function updateProfile(formData: FormData) {
   if (!/^[A-Za-z0-9._]{3,20}$/.test(usernameRaw)) {
     redirect("/me/settings?error=invalid_username");
   }
+  // Real name: required, 1-50 chars, letters + spaces/hyphens/apostrophes/periods.
+  if (!firstName) redirect("/me/settings?error=missing_first_name");
+  if (!lastName) redirect("/me/settings?error=missing_last_name");
+  const nameRe = /^[A-Za-zÀ-ÿ' .-]{1,50}$/;
+  if (!nameRe.test(firstName)) redirect("/me/settings?error=invalid_first_name");
+  if (!nameRe.test(lastName)) redirect("/me/settings?error=invalid_last_name");
 
   // Phone: optional. If set, strip everything but digits/+ and require 10-15
   // digits after the optional leading +. We don't enforce country.
@@ -81,6 +89,8 @@ export async function updateProfile(formData: FormData) {
       .update(profiles)
       .set({
         username: lower,
+        firstName,
+        lastName,
         phone,
         addressLine1: line1 || null,
         addressLine2: line2 || null,
