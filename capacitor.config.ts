@@ -11,7 +11,13 @@ const config: CapacitorConfig = {
   server: {
     url: "https://rallypot.org",
     cleartext: false,
-    allowNavigation: ["*.rallypot.org", "rallypot.org"],
+    // verify.didit.me hosts the KYC flow we redirect the user to from
+    // /verify. Without it in allowNavigation, the WKWebView silently routes
+    // Didit through iOS Safari and the in-app "Starting…" button never
+    // resolves. With it allowed, Didit's hosted ID + selfie flow runs
+    // inline in the WKWebView and the redirect-back to rallypot.org/me
+    // stays in-app too.
+    allowNavigation: ["*.rallypot.org", "rallypot.org", "verify.didit.me"],
   },
   ios: {
     contentInset: "automatic",

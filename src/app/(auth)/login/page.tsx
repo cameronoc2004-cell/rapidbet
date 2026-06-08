@@ -18,6 +18,11 @@ const ERRORS: Record<string, string> = {
   missing_last_name: "Enter your last name.",
   invalid_first_name: "First name has invalid characters.",
   invalid_last_name: "Last name has invalid characters.",
+  missing_username: "Pick a username.",
+  invalid_username: "Usernames are 3–20 characters: letters, numbers, underscore, period.",
+  username_taken: "That username is already taken.",
+  invalid_phone: "Enter a valid phone number (10–15 digits).",
+  phone_taken: "That phone number is already linked to another Rallypot account.",
   verify_failed: "That confirmation link is expired or already used.",
   missing_code: "Confirmation link was missing its code.",
   terms_required: "You must agree to the Terms of Service and Privacy Policy.",
@@ -90,11 +95,24 @@ export default async function LoginPage({ searchParams }: PageProps) {
                   />
                 </div>
                 <Field
+                  label="Username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                />
+                <Field
                   label="Email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
+                />
+                <Field
+                  label="Phone (optional)"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
                 />
                 <Field
                   label="Password"

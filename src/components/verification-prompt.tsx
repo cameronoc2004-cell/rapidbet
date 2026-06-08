@@ -53,11 +53,21 @@ export function VerificationPrompt() {
             </ul>
 
             <div className="mt-6 flex flex-col gap-2">
-              <form action={startVerification}>
+              {/* onSubmit closes the modal optimistically. The server action
+                  redirect to verify.didit.me follows after; even if the
+                  navigation is intercepted by the Capacitor WKWebView (or
+                  the redirect is slow), the modal cannot get stuck on
+                  "Starting…" because we already hid it client-side. */}
+              <form
+                action={startVerification}
+                onSubmit={() => {
+                  setBusy(true);
+                  setOpen(false);
+                }}
+              >
                 <button
                   type="submit"
                   disabled={busy}
-                  onClick={() => setBusy(true)}
                   className="w-full rounded-lg bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40 disabled:cursor-wait disabled:opacity-70"
                 >
                   {busy ? "Starting…" : "Get Verified"}
