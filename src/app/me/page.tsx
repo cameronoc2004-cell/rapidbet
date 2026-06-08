@@ -108,8 +108,13 @@ function VerificationCard({
     <section
       className={
         "rounded-xl border px-4 py-4 " +
+        // Emphasized = the user tapped a locked event and got bounced here.
+        // ring-2 is a clean 2px halo that actually renders (the previous
+        // shadow-[...]/20 was a broken bespoke utility — Tailwind can't
+        // parse the /20 opacity modifier when the value is a custom
+        // expression containing a CSS variable).
         (emphasized
-          ? "border-[var(--primary)] bg-[var(--primary-lo)]/10 shadow-[0_0_0_4px_var(--primary-lo)]/20"
+          ? "border-[var(--primary)] bg-[var(--primary-lo)]/10 ring-2 ring-[var(--primary)]/40"
           : "border-[var(--border)] bg-[var(--surface)]")
       }
     >

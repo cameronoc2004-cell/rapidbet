@@ -32,7 +32,7 @@ export function VerificationPrompt() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 32, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            className="w-full max-w-md rounded-t-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:rounded-3xl"
+            className="w-full max-w-md rounded-t-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:rounded-2xl"
           >
             <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--primary)]">
               One more step

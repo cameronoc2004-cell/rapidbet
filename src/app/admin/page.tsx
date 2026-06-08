@@ -316,7 +316,7 @@ function SettleResultCard(props: SettleResultCardProps) {
       ? ((props.rakeMinor / props.grossPoolMinor) * 100).toFixed(1)
       : "0.0";
   return (
-    <section className="rounded-2xl border border-[var(--primary-lo)]/60 bg-[var(--surface)] p-5 shadow-[0_0_40px_-20px_rgba(22,199,132,0.5)]">
+    <section className="rounded-xl border border-[var(--primary-lo)]/60 bg-[var(--surface)] p-5">
       <div className="flex items-baseline justify-between gap-3">
         <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--primary)]">
           Settled
