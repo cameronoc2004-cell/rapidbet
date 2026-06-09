@@ -48,7 +48,7 @@ export default function ConfirmedPage() {
           href="/login"
           className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
         >
-          Back to the app
+          Sign in
           <span aria-hidden="true">→</span>
         </Link>
       </div>
