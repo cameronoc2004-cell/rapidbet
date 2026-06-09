@@ -7,6 +7,7 @@ import { PLAY_MIN_AGE_YEARS } from "@/lib/config";
 import { logout, resendVerification } from "../(auth)/login/actions";
 import { submitDateOfBirth, verifyLocation } from "./actions";
 import { LocationGate } from "@/components/location-gate";
+import { DobInputs } from "@/components/dob-inputs";
 
 const ERR: Record<string, string> = {
   invalid_dob: "Enter a valid date.",
@@ -99,18 +100,7 @@ export default async function OnboardingPage({
           </p>
         ) : (
           <form action={submitDateOfBirth} className="space-y-3">
-            <label className="block">
-              <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Date of birth
-              </span>
-              <input
-                name="dob"
-                type="date"
-                required
-                max={maxDobForAge(PLAY_MIN_AGE_YEARS)}
-                className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
-              />
-            </label>
+            <DobInputs />
             <p className="text-[11px] text-[var(--text-muted)]">
               We use this to confirm eligibility. It is never shown publicly.
             </p>
@@ -215,8 +205,3 @@ function ProgressDots({ steps }: { steps: { label: string; done: boolean }[] }) 
   );
 }
 
-function maxDobForAge(years: number): string {
-  const d = new Date();
-  d.setUTCFullYear(d.getUTCFullYear() - years);
-  return d.toISOString().slice(0, 10);
-}
