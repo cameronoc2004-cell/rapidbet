@@ -83,7 +83,12 @@ export default async function RootLayout({
             fixed header. */}
         <main
           className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4"
-          style={{ paddingTop: "calc(var(--topbar-h) + 0.5rem)" }}
+          style={{
+            paddingTop: "calc(var(--topbar-h) + 0.5rem)",
+            // Bottom padding matches the fixed BottomTabBar height when it's
+            // visible; otherwise just a small breathing room above the footer.
+            paddingBottom: showTabs ? "calc(var(--bottombar-h) + 1rem)" : "1.5rem",
+          }}
         >
           <PageTransition>{children}</PageTransition>
         </main>

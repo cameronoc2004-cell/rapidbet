@@ -13,21 +13,26 @@
   --surface-2: #1A201D;   /* inputs, secondary surfaces */
   --border: #242B28;
 
-  /* Chrome metrics. --topbar-h is the total visual height of the
-     fixed top bar (safe area inset + inner content row). Used by the
-     layout to add equivalent top padding to <main> so content sits
-     directly below the bar, never under it. Bump this if the top bar
-     visually changes height. */
+  /* Chrome metrics. Both bars are position: fixed, anchored to viewport
+     so they cannot move during scroll, overscroll, or content updates.
+     --topbar-h / --bottombar-h are their total visual heights (inner
+     content row + the safe-area inset on whichever edge they touch).
+     Used by the layout to pad <main> top + bottom so content sits in
+     the unoccupied middle, never underneath the chrome. */
   --topbar-h: calc(env(safe-area-inset-top) + 50px);
+  --bottombar-h: calc(env(safe-area-inset-bottom) + 64px);
 
   /* Energy */
   --primary: #16C784;     /* money green */
   --primary-hi: #2BE39A;
   --primary-lo: #0E9E68;
 
-  /* Text */
+  /* Text. --text-muted bumped from #8B948F (5.8:1) → #A8B0AC (7.4:1) so
+     long-form gray copy ("Your in-flight entries — open or awaiting…")
+     reads cleanly on the near-black background. Passes WCAG AAA for
+     normal text. */
   --text: #F2F5F3;
-  --text-muted: #8B948F;
+  --text-muted: #A8B0AC;
 
   /* Destructive */
   --danger: #E5564B;
@@ -66,8 +71,22 @@ html, body {
 body {
   font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
+  /* Antialiasing + subpixel positioning makes Inter render noticeably
+     sharper on retina displays, especially the small uppercase labels. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tighten the tiny eyebrow / chip labels we use everywhere. The default
+   tracking of 0.18em + 10px font-size was both small and over-spaced —
+   bumping to 11px and reducing tracking to 0.14em (still mono uppercase
+   but closer-set) reads as a label, not a smear. Applied via attribute
+   selector so we don't have to touch every component using these
+   utility classes. */
+.text-\[10px\].uppercase {
+  font-size: 11px;
+  letter-spacing: 0.14em;
 }
 
 /* Tabular figures everywhere we render numbers */
