@@ -181,7 +181,36 @@ export async function deleteAccount() {
     },
   });
 
-  // Nullify non-cascading FKs so the delete doesn't error.
+  // Remove the auth identity in Supabase FIRST, before we touch our DB.
+  // The previous implementation deleted our profile row, then tried to
+  // delete the auth.users row in a silent try/catch — if the auth deletion
+  // failed (bad service-role key, network, etc.) we never knew and the
+  // user was left orphaned in Supabase. Now: if auth deletion fails we
+  // log loudly to both console and audit_logs, and we still proceed with
+  // local cleanup + sign-out so the user isn't stuck. The orphan auth
+  // record can be swept by scripts/clear-auth-orphans.ts later.
+  let authDeleted = false;
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.auth.admin.deleteUser(authUserId);
+    if (error) throw error;
+    authDeleted = true;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(
+      "[delete_account] supabase auth.admin.deleteUser failed:",
+      JSON.stringify({ authUserId, userId, error: msg }),
+    );
+    await logAudit({
+      actorUserId: userId,
+      action: "user.delete_account.auth_failed",
+      refType: "profile",
+      refId: userId,
+      payload: { authUserId, error: msg },
+    });
+  }
+
+  // Nullify non-cascading FKs so the profile delete doesn't error.
   await db
     .update(auditLogs)
     .set({ actorUserId: null })
@@ -198,14 +227,7 @@ export async function deleteAccount() {
   // Cascade-delete everything owned by this profile.
   await db.delete(profiles).where(eq(profiles.id, userId));
 
-  // Remove the auth identity in Supabase (service role).
-  try {
-    const admin = getSupabaseAdmin();
-    await admin.auth.admin.deleteUser(authUserId);
-  } catch {
-    // Already gone or admin unavailable — keep going; the session is invalid
-    // anyway once we sign out below.
-  }
+  void authDeleted; // referenced for future telemetry; intentionally unused for now
 
   // Drop the session cookies. Once admin.deleteUser succeeded, the JWT is
   // already invalid server-side; signOut() can still raise on the network
