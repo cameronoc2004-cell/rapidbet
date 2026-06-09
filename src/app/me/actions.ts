@@ -224,5 +224,8 @@ export async function deleteAccount() {
     }
   }
 
-  redirect("/login?deleted=1");
+  // Sign-up tab, not sign-in — a user who just deleted their account is
+  // overwhelmingly more likely to want a fresh start than to re-enter the
+  // credentials of an account that no longer exists.
+  redirect("/login?mode=signup&deleted=1");
 }
