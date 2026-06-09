@@ -34,15 +34,13 @@ const TABS: Tab[] = [
 // iOS-style full-width tab bar pinned to the bottom edge.
 //
 // Layout choices:
-// - sticky bottom-0, not position: fixed. The body is min-h-dvh + flex-col
-//   and the tab bar is the last child after a flex-1 <main>; sticky keeps
-//   it pinned to the viewport bottom during scroll without overlaying
-//   content, and (unlike fixed) it gets pushed up by the iOS software
-//   keyboard instead of fighting it.
+// - position: fixed bottom-0. Pinned to the viewport edge so the bar can't
+//   move during scroll, overscroll, or content reflow — same anchoring as
+//   the top bar above. <main> reserves --bottombar-h of bottom padding so
+//   content always lives in the unoccupied middle of the viewport.
 // - Inner container max-w-3xl mirrors the main content + top bar so the
 //   tab bar's tap regions sit under the same column on tablet/desktop.
-// - py-3 keeps every tap target ≥ 44×44px (icon ~22 + label + 24px
-//   vertical padding).
+// - py-3 + min-h-[44px] keep every tap target ≥ 44×44px (Apple HIG).
 // - env(safe-area-inset-bottom) padding clears the home indicator.
 export function BottomTabBar() {
   const pathname = usePathname();
