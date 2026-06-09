@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/top-bar";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { PageTransition } from "@/components/page-transition";
 import { getCurrentSession, getOnboardingStatus } from "@/lib/session";
 
 const inter = Inter({
@@ -82,7 +83,7 @@ export default async function RootLayout({
           className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4"
           style={{ paddingTop: "calc(var(--topbar-h) + 0.5rem)" }}
         >
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
         {/* No global footer — pages that want Terms/Privacy links render
             them inline (see /login). Avoids the duplicate row issue and
