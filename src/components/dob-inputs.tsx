@@ -16,9 +16,94 @@ import { useEffect, useMemo, useRef, useState } from "react";
 //   - inputMode="numeric" so iOS shows the digit keypad, not the alpha kb.
 //   - Auto-advance focus when MM or DD reaches 2 chars.
 //   - Non-digit characters are filtered as the user types.
-//   - The hidden dob field stays empty until all three are filled; the
-//     submit handler / server action will reject empty as invalid_dob.
-export function DobInputs() {
+//   - Real-time validation: rejects non-existent dates (Feb 31, month 61,
+//     etc.), future dates, and under-18s. Inline red message names the
+//     specific problem. Hidden dob field stays empty until valid; the
+//     parent form's submit button can disable itself via onValidityChange.
+
+const MIN_AGE_YEARS = 18;
+// Earliest birthday we'll allow — defensive against typos. Pre-1900 isn't
+// going to be a real user; if a 125-year-old user shows up, raise this.
+const MIN_YEAR = 1900;
+
+interface DobInputsProps {
+  // Called whenever the parsed date's validity changes. Use it to disable
+  // the surrounding form's submit button until the user has entered a real
+  // date that satisfies the age gate.
+  onValidityChange?: (valid: boolean) => void;
+}
+
+interface Validation {
+  valid: boolean;
+  iso: string;        // YYYY-MM-DD when valid, "" otherwise
+  error: string | null;
+  showError: boolean; // only after the user has touched all 3 fields
+}
+
+function validate(month: string, day: string, year: string): Validation {
+  const m = Number(month);
+  const d = Number(day);
+  const y = Number(year);
+
+  // Nothing typed yet? Don't surface an error.
+  if (!month && !day && !year) {
+    return { valid: false, iso: "", error: null, showError: false };
+  }
+
+  // Wait for full year before bothering — typing "1" → "19" → "199" → "1998"
+  // shouldn't flash three different errors.
+  const allEntered = month !== "" && day !== "" && year.length === 4;
+  if (!allEntered) {
+    return { valid: false, iso: "", error: null, showError: false };
+  }
+
+  if (m < 1 || m > 12) {
+    return { valid: false, iso: "", error: "Month must be between 1 and 12.", showError: true };
+  }
+  if (d < 1 || d > 31) {
+    return { valid: false, iso: "", error: "Day must be between 1 and 31.", showError: true };
+  }
+  if (y < MIN_YEAR || y > new Date().getFullYear()) {
+    return { valid: false, iso: "", error: "Enter a real year.", showError: true };
+  }
+
+  // Calendar-aware: reject Feb 31, Apr 31, etc. Use UTC Date and verify the
+  // round-trip matches what was entered (JS auto-rolls overflow into the
+  // next month otherwise).
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d
+  ) {
+    return { valid: false, iso: "", error: "That date doesn't exist.", showError: true };
+  }
+
+  // Age check (UTC-stable). Server enforces this too — keeping the client
+  // friendly so they don't tap Save and bounce back with an error banner.
+  const today = new Date();
+  const yearsDiff = today.getUTCFullYear() - y;
+  const monthsDiff = today.getUTCMonth() - (m - 1);
+  const daysDiff = today.getUTCDate() - d;
+  const age = yearsDiff - (monthsDiff < 0 || (monthsDiff === 0 && daysDiff < 0) ? 1 : 0);
+  if (age < MIN_AGE_YEARS) {
+    return {
+      valid: false,
+      iso: "",
+      error: `You must be at least ${MIN_AGE_YEARS} to play.`,
+      showError: true,
+    };
+  }
+
+  return {
+    valid: true,
+    iso: `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+    error: null,
+    showError: false,
+  };
+}
+
+export function DobInputs({ onValidityChange }: DobInputsProps) {
   const [month, setMonth] = useState("");
   const [day, setDay] = useState("");
   const [year, setYear] = useState("");
@@ -26,12 +111,11 @@ export function DobInputs() {
   const dayRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
 
-  // Compose YYYY-MM-DD only when all three are present. The server action
-  // does the actual validity check; we just shape it.
-  const dob = useMemo(() => {
-    if (month.length === 0 || day.length === 0 || year.length !== 4) return "";
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-  }, [month, day, year]);
+  const result = useMemo(() => validate(month, day, year), [month, day, year]);
+
+  useEffect(() => {
+    onValidityChange?.(result.valid);
+  }, [result.valid, onValidityChange]);
 
   // Auto-advance focus once a field is "full" (MM/DD at 2 chars).
   useEffect(() => {
@@ -49,7 +133,8 @@ export function DobInputs() {
           placeholder="MM"
           value={month}
           maxLength={2}
-          onChange={(v) => setMonth(v)}
+          invalid={result.showError && (Number(month) < 1 || Number(month) > 12)}
+          onChange={setMonth}
         />
         <NumericField
           label="Day"
@@ -57,7 +142,8 @@ export function DobInputs() {
           value={day}
           maxLength={2}
           inputRef={dayRef}
-          onChange={(v) => setDay(v)}
+          invalid={result.showError && (Number(day) < 1 || Number(day) > 31)}
+          onChange={setDay}
         />
         <NumericField
           label="Year"
@@ -65,10 +151,14 @@ export function DobInputs() {
           value={year}
           maxLength={4}
           inputRef={yearRef}
-          onChange={(v) => setYear(v)}
+          invalid={result.showError && (Number(year) < MIN_YEAR || Number(year) > new Date().getFullYear())}
+          onChange={setYear}
         />
       </div>
-      <input type="hidden" name="dob" value={dob} />
+      {result.showError && result.error && (
+        <p className="text-xs text-[var(--danger)]">{result.error}</p>
+      )}
+      <input type="hidden" name="dob" value={result.iso} />
     </div>
   );
 }
@@ -79,6 +169,7 @@ function NumericField({
   value,
   maxLength,
   inputRef,
+  invalid,
   onChange,
 }: {
   label: string;
@@ -86,6 +177,7 @@ function NumericField({
   value: string;
   maxLength: number;
   inputRef?: React.RefObject<HTMLInputElement | null>;
+  invalid?: boolean;
   onChange: (v: string) => void;
 }) {
   return (
@@ -97,8 +189,6 @@ function NumericField({
         ref={inputRef}
         value={value}
         onChange={(e) =>
-          // Strip non-digits as the user types so paste/autocorrect can't
-          // sneak a letter or separator in.
           onChange(e.target.value.replace(/\D/g, "").slice(0, maxLength))
         }
         inputMode="numeric"
@@ -108,7 +198,10 @@ function NumericField({
         autoComplete={
           label === "Month" ? "bday-month" : label === "Day" ? "bday-day" : "bday-year"
         }
-        className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-center font-mono text-base text-[var(--text)] outline-none focus:border-[var(--primary)]"
+        className={
+          "mt-1.5 w-full rounded-lg border bg-[var(--surface-2)] px-3 py-2.5 text-center font-mono text-base text-[var(--text)] outline-none transition-colors focus:border-[var(--primary)] " +
+          (invalid ? "border-[var(--danger)]" : "border-[var(--border)]")
+        }
       />
     </label>
   );

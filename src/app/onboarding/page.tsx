@@ -7,7 +7,7 @@ import { PLAY_MIN_AGE_YEARS } from "@/lib/config";
 import { logout, resendVerification } from "../(auth)/login/actions";
 import { submitDateOfBirth, verifyLocation } from "./actions";
 import { LocationGate } from "@/components/location-gate";
-import { DobInputs } from "@/components/dob-inputs";
+import { DobForm } from "@/components/dob-form";
 
 const ERR: Record<string, string> = {
   invalid_dob: "Enter a valid date.",
@@ -99,18 +99,7 @@ export default async function OnboardingPage({
             <span className="font-mono text-[var(--text)]">{session.profile.dateOfBirth}</span>.
           </p>
         ) : (
-          <form action={submitDateOfBirth} className="space-y-3">
-            <DobInputs />
-            <p className="text-[11px] text-[var(--text-muted)]">
-              We use this to confirm eligibility. It is never shown publicly.
-            </p>
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)] hover:ring-2 hover:ring-white/40"
-            >
-              Save
-            </button>
-          </form>
+          <DobForm action={submitDateOfBirth} />
         )}
       </StepCard>
 
