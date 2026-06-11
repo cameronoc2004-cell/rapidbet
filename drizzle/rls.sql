@@ -31,6 +31,12 @@ ALTER TABLE self_exclusions             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE device_tokens               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_orders              ENABLE ROW LEVEL SECURITY;
+-- Ledger internals — server-only. RLS enabled with NO policies, so the anon
+-- key cannot touch these tables at all. The server's `postgres` role
+-- bypasses RLS and keeps full access for the ledger engine.
+ALTER TABLE accounts                    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE postings                    ENABLE ROW LEVEL SECURITY;
 
 -- =====================
 -- Helper: maps auth.uid() (uuid) -> profiles.id (int)
