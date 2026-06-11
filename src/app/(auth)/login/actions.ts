@@ -79,31 +79,77 @@ function normalizeName(s: string): string {
   return s.replace(/’/g, "'");
 }
 
-export async function signUp(formData: FormData) {
+// Per-call state shape: error code + the user's typed values so the client
+// form can re-render with everything they entered preserved. The field
+// that triggered the error is intentionally absent from `values` so it
+// re-renders blank — the user only re-types what they got wrong, not the
+// whole form. Passwords are NEVER round-tripped (security + browsers
+// generally ignore defaultValue on password inputs anyway); the client
+// clears both password fields on any error.
+export interface SignUpState {
+  error: string | null;
+  values: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    termsAccepted?: boolean;
+  };
+}
+
+export async function signUp(
+  _prev: SignUpState,
+  formData: FormData,
+): Promise<SignUpState> {
   const email = field(formData, "email").toLowerCase();
   const password = field(formData, "password");
   const confirmPassword = field(formData, "confirmPassword");
   const firstName = normalizeName(field(formData, "firstName"));
   const lastName = normalizeName(field(formData, "lastName"));
   const phoneRaw = field(formData, "phone");
-  // Required: checkbox must be checked. Browsers only send "on" when checked.
+  // Checkbox: browsers only send "on" when checked, so absent === unchecked.
   const termsAccepted = formData.get("acceptTerms") === "on";
 
+  // Snapshot of everything the user typed except the one field that breaks.
+  // Each branch builds this for itself so the broken field is dropped.
+  const allValues = {
+    firstName,
+    lastName,
+    email,
+    phone: phoneRaw,
+    termsAccepted,
+  };
+  const without = (key: keyof typeof allValues): SignUpState["values"] => {
+    const v = { ...allValues } as Partial<typeof allValues>;
+    delete v[key];
+    return v as SignUpState["values"];
+  };
+
   if (!termsAccepted) {
-    redirect("/login?mode=signup&error=terms_required");
+    return { error: "terms_required", values: allValues };
   }
-  if (!firstName) redirect("/login?mode=signup&error=missing_first_name");
-  if (!lastName) redirect("/login?mode=signup&error=missing_last_name");
-  if (!NAME_RE.test(firstName)) redirect("/login?mode=signup&error=invalid_first_name");
-  if (!NAME_RE.test(lastName)) redirect("/login?mode=signup&error=invalid_last_name");
+  if (!firstName) {
+    return { error: "missing_first_name", values: without("firstName") };
+  }
+  if (!lastName) {
+    return { error: "missing_last_name", values: without("lastName") };
+  }
+  if (!NAME_RE.test(firstName)) {
+    return { error: "invalid_first_name", values: without("firstName") };
+  }
+  if (!NAME_RE.test(lastName)) {
+    return { error: "invalid_last_name", values: without("lastName") };
+  }
   if (!EMAIL_RE.test(email)) {
-    redirect("/login?mode=signup&error=invalid_email");
+    return { error: "invalid_email", values: without("email") };
   }
   if (password.length < 8) {
-    redirect("/login?mode=signup&error=weak_password");
+    // Both password fields clear (user has to re-enter both on any password
+    // error). Names/email/phone preserved.
+    return { error: "weak_password", values: allValues };
   }
   if (password !== confirmPassword) {
-    redirect("/login?mode=signup&error=password_mismatch");
+    return { error: "password_mismatch", values: allValues };
   }
 
   // Phone is optional, but if provided must pass the same shape check used
@@ -111,7 +157,7 @@ export async function signUp(formData: FormData) {
   let phone: string | null = null;
   if (phoneRaw) {
     phone = normalizePhone(phoneRaw);
-    if (!phone) redirect("/login?mode=signup&error=invalid_phone");
+    if (!phone) return { error: "invalid_phone", values: without("phone") };
   }
 
   // Auto-derive a unique username from the email. User can change it later
@@ -126,7 +172,11 @@ export async function signUp(formData: FormData) {
       .from(profiles)
       .where(eq(profiles.phone, phone))
       .limit(1);
-    if (phoneTaken.length > 0) redirect("/login?mode=signup&error=phone_taken");
+    if (phoneTaken.length > 0) {
+      // Keep the phone in `values` so the user can see what they typed; clearing
+      // it would be more confusing than not, given the error names it directly.
+      return { error: "phone_taken", values: allValues };
+    }
   }
 
   const supabase = await createSupabaseServerClient();
@@ -161,7 +211,11 @@ export async function signUp(formData: FormData) {
     else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("confirmation"))
       code = "smtp_failure";
     else if (msg.includes("disabled")) code = "signups_disabled";
-    redirect(`/login?mode=signup&error=${code}`);
+    // For email_taken specifically the user needs to see their typed email
+    // (the EmailTakenBanner offers a sign-in link); for the other Supabase
+    // failures all typed values stay so retrying doesn't make them re-type
+    // anything.
+    return { error: code, values: allValues };
   }
 
   // Provision profile + wallet + signup bonus eagerly. If the user never

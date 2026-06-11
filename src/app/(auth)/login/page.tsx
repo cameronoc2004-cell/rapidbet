@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfileId } from "@/lib/session";
-import { resendVerification, signIn, signUp } from "./actions";
+import { resendVerification, signIn } from "./actions";
+import { SignUpForm } from "./signup-form";
 import { APP_NAME } from "@/lib/config";
 
 const ERRORS: Record<string, string> = {
@@ -74,80 +75,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
           <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
             {mode === "signup" ? (
-              <form action={signUp} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field
-                    label="First name"
-                    name="firstName"
-                    type="text"
-                    autoComplete="given-name"
-                    required
-                  />
-                  <Field
-                    label="Last name"
-                    name="lastName"
-                    type="text"
-                    autoComplete="family-name"
-                    required
-                  />
-                </div>
-                <Field
-                  label="Email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                />
-                <Field
-                  label="Phone (optional)"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                />
-                <Field
-                  label="Password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="At least 8 characters"
-                  required
-                />
-                <Field
-                  label="Confirm password"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                />
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 transition-colors hover:border-[var(--primary-lo)]/60">
-                  <input
-                    type="checkbox"
-                    name="acceptTerms"
-                    required
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
-                  />
-                  <span className="text-xs leading-relaxed text-[var(--text-muted)]">
-                    I am 18+ and I agree to the{" "}
-                    <Link href="/terms" className="text-[var(--primary)] hover:underline">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" className="text-[var(--primary)] hover:underline">
-                      Privacy Policy
-                    </Link>
-                    .
-                  </span>
-                </label>
-                {error === "email_taken" ? (
-                  <EmailTakenBanner />
-                ) : error && ERRORS[error] ? (
-                  <ErrorBanner text={ERRORS[error]} />
-                ) : null}
-                <SubmitButton>Create account</SubmitButton>
-                <p className="pt-2 text-center text-[11px] text-[var(--text-muted)]">
-                  We&apos;ll send a verification link to your email.
-                </p>
-              </form>
+              <SignUpForm />
             ) : (
               <form action={signIn} className="space-y-3">
                 <Field label="Email" name="email" type="email" required />
