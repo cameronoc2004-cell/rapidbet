@@ -5,6 +5,7 @@ import { TopBar } from "@/components/top-bar";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { PageTransition } from "@/components/page-transition";
 import { DeepLinkHandler } from "@/components/deep-link-handler";
+import { NativeShell } from "@/components/native-shell";
 import { getCurrentSession, getOnboardingStatus } from "@/lib/session";
 
 const inter = Inter({
@@ -76,6 +77,7 @@ export default async function RootLayout({
       */}
       <body className="flex min-h-dvh flex-col overflow-x-hidden bg-[var(--bg)] text-[var(--text)]">
         <DeepLinkHandler />
+        <NativeShell />
         <TopBar />
         {/* Top padding compensates for the fixed top bar. The CSS variable
             --topbar-h is the bar's visual height (safe-area + inner row).

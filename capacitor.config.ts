@@ -24,6 +24,29 @@ const config: CapacitorConfig = {
     backgroundColor: "#0A0C0B",
     // Pull-to-refresh feels weird when the page already auto-reloads on focus.
     scrollEnabled: true,
+    // Prevents iOS's default "page couldn't load" overlay from flashing
+    // when the WebView has a brief network hiccup. The native splash takes
+    // over on cold-start so the user sees a branded screen instead of a
+    // blank WebView while the bundle fetches.
+    limitsNavigationsToAppBoundDomains: false,
+  },
+  plugins: {
+    SplashScreen: {
+      // Brand-matched splash: same background as the body, no spinner
+      // (looks more native), and we manually call hide() once the React
+      // tree is mounted instead of letting it auto-dismiss too early.
+      backgroundColor: "#0A0C0B",
+      launchAutoHide: false,
+      showSpinner: false,
+      androidScaleType: "CENTER_CROP",
+    },
+    StatusBar: {
+      // Dark canvas, light glyphs. Locked so iOS doesn't try to swap it
+      // mid-navigation.
+      style: "DARK",
+      backgroundColor: "#0A0C0B",
+      overlaysWebView: true,
+    },
   },
 };
 

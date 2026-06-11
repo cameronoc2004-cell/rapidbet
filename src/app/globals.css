@@ -187,6 +187,43 @@ html, body, * {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Hide scrollbars everywhere — iOS apps don't show them. Content still
+   scrolls; the visual indicator is just gone. */
+*::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+}
+
+/* No "select word + lookup" balloon on regular body text either. iOS
+   apps generally suppress text selection except in clearly-typeable
+   inputs. Inputs and textareas re-enable it explicitly below. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Lock the document so the viewport itself doesn't pan with finger drag
+   when content is shorter than the screen. Scrolling within <main> still
+   works fine because main has its own paddingTop/paddingBottom and the
+   document never *needs* to scroll — every scrollable list / card grid
+   handles its own overflow. */
+html, body {
+  touch-action: pan-y;
+}
+
+/* Smooth iOS-style font rendering — already had antialiased; add the
+   text-size-adjust lock so iOS doesn't auto-zoom on rotation. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* Inputs inherit the body font size to avoid iOS auto-zoom on focus
    (Safari zooms on inputs < 16px). */
 input, select, textarea {
