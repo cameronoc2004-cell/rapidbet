@@ -39,10 +39,30 @@ const EMAIL_RE = /^[A-Za-z0-9](?:[A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9](?:[A
 // underscores.
 const NAME_RE = /^[\p{L}\p{M}' ’.-]{1,50}$/u;
 
-// Username: 3–20 chars, alphanumerics + underscore + period only. Same shape
-// as /me/settings updateProfile so the constraint is identical across the
-// surface area where a user can choose one.
-const USERNAME_RE = /^[A-Za-z0-9._]{3,20}$/;
+// Derive a unique username from the email's local part. Strip non-allowed
+// chars, pad to 3+ chars if needed, suffix _2, _3, … on collision. Users
+// don't pick a username at signup any more — they can change it later from
+// /me/settings if they want something other than the auto-derived one.
+async function deriveUniqueUsername(email: string): Promise<string> {
+  const base = (email.split("@")[0] ?? "user")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 17) || "user";
+  const padded = base.length < 3 ? (base + "user").slice(0, 6) : base;
+  let candidate = padded;
+  for (let n = 2; n < 1000; n++) {
+    const taken = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.username, candidate))
+      .limit(1);
+    if (taken.length === 0) return candidate;
+    candidate = `${padded.slice(0, 17)}_${n}`;
+  }
+  // Hard fallback: random suffix. We've exhausted 1..999 collisions on this
+  // email's base — overwhelmingly improbable, but make sure we don't loop.
+  return `${padded}_${Math.random().toString(36).slice(2, 6)}`;
+}
 
 // Phone: digits, optional + prefix, 10–15 digits after strip. Same shape as
 // updateProfile validation.
@@ -65,7 +85,6 @@ export async function signUp(formData: FormData) {
   const confirmPassword = field(formData, "confirmPassword");
   const firstName = normalizeName(field(formData, "firstName"));
   const lastName = normalizeName(field(formData, "lastName"));
-  const usernameRaw = field(formData, "username");
   const phoneRaw = field(formData, "phone");
   // Required: checkbox must be checked. Browsers only send "on" when checked.
   const termsAccepted = formData.get("acceptTerms") === "on";
@@ -77,10 +96,6 @@ export async function signUp(formData: FormData) {
   if (!lastName) redirect("/login?mode=signup&error=missing_last_name");
   if (!NAME_RE.test(firstName)) redirect("/login?mode=signup&error=invalid_first_name");
   if (!NAME_RE.test(lastName)) redirect("/login?mode=signup&error=invalid_last_name");
-  if (!usernameRaw) redirect("/login?mode=signup&error=missing_username");
-  if (!USERNAME_RE.test(usernameRaw)) {
-    redirect("/login?mode=signup&error=invalid_username");
-  }
   if (!EMAIL_RE.test(email)) {
     redirect("/login?mode=signup&error=invalid_email");
   }
@@ -99,17 +114,9 @@ export async function signUp(formData: FormData) {
     if (!phone) redirect("/login?mode=signup&error=invalid_phone");
   }
 
-  // Username uniqueness: case-insensitive. We lowercase before checking and
-  // store lowercase to avoid display drift.
-  const username = usernameRaw.toLowerCase();
-  const usernameTaken = await db
-    .select({ id: profiles.id })
-    .from(profiles)
-    .where(eq(profiles.username, username))
-    .limit(1);
-  if (usernameTaken.length > 0) {
-    redirect("/login?mode=signup&error=username_taken");
-  }
+  // Auto-derive a unique username from the email. User can change it later
+  // in /me/settings.
+  const username = await deriveUniqueUsername(email);
 
   // Phone uniqueness: one phone per account. Checked here so the user gets
   // a clear error before the Supabase signUp burns a rate-limit slot.
