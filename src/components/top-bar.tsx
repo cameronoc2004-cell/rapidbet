@@ -19,7 +19,10 @@ export async function TopBar() {
 
   return (
     <header
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      // Capped safe-top — see comment in globals.css. Without the cap,
+      // mobile Safari can briefly inflate the inset and create a giant
+      // empty band above the wordmark.
+      style={{ paddingTop: "var(--safe-top)" }}
       className="fixed inset-x-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]"
     >
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-3 py-2 sm:px-4">

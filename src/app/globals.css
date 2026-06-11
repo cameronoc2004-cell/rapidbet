@@ -18,8 +18,16 @@
      --topbar-h / --bottombar-h are their total visual heights (inner
      content row + the safe-area inset on whichever edge they touch).
      Used by the layout to pad <main> top + bottom so content sits in
-     the unoccupied middle, never underneath the chrome. */
-  --topbar-h: calc(env(safe-area-inset-top) + 50px);
+     the unoccupied middle, never underneath the chrome.
+
+     min(env(safe-area-inset-top), 50px) caps the top inset: real notch
+     / dynamic-island devices report 44–47px, but mobile Safari can
+     briefly report 200+px while its own top chrome animates in. The
+     cap keeps the wordmark glued to the bottom of the iOS status bar
+     no matter what Safari does, instead of letting the bar grow a
+     giant empty band underneath the notch. */
+  --safe-top: min(env(safe-area-inset-top), 50px);
+  --topbar-h: calc(var(--safe-top) + 50px);
   --bottombar-h: calc(env(safe-area-inset-bottom) + 64px);
 
   /* Energy */
