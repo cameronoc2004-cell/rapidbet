@@ -49,7 +49,11 @@ export function BottomTabBar() {
     <nav
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--surface)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      // Same cap rationale as top-bar.tsx — inline min() so Safari can't
+      // inflate the inset and grow the bar. Home indicator is ~34px on
+      // every modern iPhone; 40px is enough headroom and stops anything
+      // weird from happening.
+      style={{ paddingBottom: "min(env(safe-area-inset-bottom, 40px), 40px)" }}
     >
       <div className="mx-auto flex max-w-3xl items-stretch">
         {TABS.map((tab) => {
