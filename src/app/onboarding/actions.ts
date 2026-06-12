@@ -27,6 +27,16 @@ export async function submitDateOfBirth(formData: FormData) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
     redirect("/onboarding?error=invalid_dob");
   }
+  // Year bounds: the client (DobInputs) already enforces 1900 ≤ year ≤
+  // current year, but a direct POST that bypasses the client could submit
+  // "0001-01-01" and the regex above lets it through. Without these
+  // bounds, computeAgeYears returns a 4-figure age that trivially passes
+  // the >= PLAY_MIN_AGE_YEARS check. Mirror the cap on the server so the
+  // age gate can't be defeated by hand-crafted requests.
+  const year = Number(dob.split("-")[0]);
+  if (year < 1900 || year > new Date().getUTCFullYear()) {
+    redirect("/onboarding?error=invalid_dob");
+  }
   const age = computeAgeYears(dob);
   if (age < PLAY_MIN_AGE_YEARS) {
     redirect("/onboarding?error=underage");
