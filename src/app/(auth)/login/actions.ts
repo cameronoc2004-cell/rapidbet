@@ -9,6 +9,7 @@ import { genesisCredit } from "@/lib/ledger-ops";
 import { logAudit } from "@/db/audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { STARTER_VIRTUAL_BALANCE_MINOR } from "@/lib/config";
+import { normalizePhone } from "@/lib/phone";
 
 function field(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -62,15 +63,6 @@ async function deriveUniqueUsername(email: string): Promise<string> {
   // Hard fallback: random suffix. We've exhausted 1..999 collisions on this
   // email's base — overwhelmingly improbable, but make sure we don't loop.
   return `${padded}_${Math.random().toString(36).slice(2, 6)}`;
-}
-
-// Phone: digits, optional + prefix, 10–15 digits after strip. Same shape as
-// updateProfile validation.
-function normalizePhone(raw: string): string | null {
-  if (!raw) return null;
-  const compact = raw.replace(/[\s()-]/g, "");
-  if (!/^\+?\d{10,15}$/.test(compact)) return null;
-  return compact;
 }
 
 // Normalize curly apostrophes to straight ones so the DB has one canonical

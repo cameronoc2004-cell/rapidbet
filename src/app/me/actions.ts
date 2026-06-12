@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { and, eq, ne } from "drizzle-orm";
+import { normalizePhone } from "@/lib/phone";
 import { db } from "@/db/client";
 import { auditLogs, profiles, questions, settlements } from "@/db/schema";
 import { getCurrentProfileId, getCurrentSession } from "@/lib/session";
@@ -49,15 +50,13 @@ export async function updateProfile(formData: FormData) {
   if (!nameRe.test(firstName)) redirect("/me/settings?error=invalid_first_name");
   if (!nameRe.test(lastName)) redirect("/me/settings?error=invalid_last_name");
 
-  // Phone: optional. If set, strip everything but digits/+ and require 10-15
-  // digits after the optional leading +. We don't enforce country.
+  // Phone: optional. Canonicalized to digits-only with US country code
+  // stripped (see src/lib/phone.ts) so uniqueness can't be bypassed by
+  // formatting variations.
   let phone: string | null = null;
   if (phoneRaw) {
-    const compact = phoneRaw.replace(/[\s()-]/g, "");
-    if (!/^\+?\d{10,15}$/.test(compact)) {
-      redirect("/me/settings?error=invalid_phone");
-    }
-    phone = compact;
+    phone = normalizePhone(phoneRaw);
+    if (!phone) redirect("/me/settings?error=invalid_phone");
   }
 
   // Postal code: optional, US-style 5 or 9 digits ("12345" or "12345-6789").
