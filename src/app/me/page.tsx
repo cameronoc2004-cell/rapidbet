@@ -34,7 +34,7 @@ export default async function MePage({
           Profile
         </div>
         <h1 className="mt-1 truncate font-display text-3xl font-bold tracking-tight text-[var(--text)]">
-          @{profile.username}
+          {[profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profile"}
         </h1>
         <p className="mt-1 truncate text-sm text-[var(--text-muted)]">
           Balance{" "}

@@ -95,7 +95,7 @@ export default async function AdminPage({
           netPoolMinor={settlementResult.netPoolMinor}
           winnersCount={settlementResult.winnersCount}
           perWinnerMinor={settlementResult.perWinnerMinor}
-          winnerUsernames={settlementResult.winnerUsernames}
+          winnerNames={settlementResult.winnerNames}
         />
       )}
 
@@ -278,7 +278,11 @@ async function loadSettlement(id: number) {
 
   // Pull the winner usernames for the result card.
   const winnerRows = await db
-    .select({ username: profiles.username, payoutMinor: entries.payoutMinor })
+    .select({
+      firstName: profiles.firstName,
+      lastName: profiles.lastName,
+      payoutMinor: entries.payoutMinor,
+    })
     .from(entries)
     .innerJoin(profiles, eq(profiles.id, entries.userId))
     .where(
@@ -295,7 +299,9 @@ async function loadSettlement(id: number) {
     netPoolMinor: row.settlement.netPoolMinor,
     winnersCount: row.settlement.winnersCount,
     perWinnerMinor: row.settlement.perWinnerMinor,
-    winnerUsernames: winnerRows.map((w) => w.username),
+    winnerNames: winnerRows.map((w) =>
+      w.firstName ? `${w.firstName}${w.lastName ? ` ${w.lastName[0]}.` : ""}` : "Player",
+    ),
   };
 }
 
@@ -307,7 +313,7 @@ interface SettleResultCardProps {
   netPoolMinor: number;
   winnersCount: number;
   perWinnerMinor: number;
-  winnerUsernames: string[];
+  winnerNames: string[];
 }
 
 function SettleResultCard(props: SettleResultCardProps) {
@@ -364,9 +370,9 @@ function SettleResultCard(props: SettleResultCardProps) {
         >
           {formatMoney(props.perWinnerMinor)}
         </div>
-        {props.winnerUsernames.length > 0 && (
+        {props.winnerNames.length > 0 && (
           <div className="mt-2 text-xs text-[var(--text-muted)]">
-            {props.winnerUsernames.map((u) => `@${u}`).join(" · ")}
+            {props.winnerNames.join(" · ")}
           </div>
         )}
       </div>

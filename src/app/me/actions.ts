@@ -24,7 +24,6 @@ export async function updateProfile(formData: FormData) {
   const userId = await getCurrentProfileId();
   if (!userId) redirect("/login");
 
-  const usernameRaw = String(formData.get("username") ?? "").trim();
   // Normalize curly apostrophe → straight apostrophe so iOS autocorrect
   // (' → ’) doesn't fail validation.
   const firstName = String(formData.get("firstName") ?? "").trim().replace(/’/g, "'");
@@ -35,11 +34,6 @@ export async function updateProfile(formData: FormData) {
   const city = String(formData.get("city") ?? "").trim();
   const postalRaw = String(formData.get("postalCode") ?? "").trim();
 
-  // Username: 3-20 chars, alphanumerics + underscore + period only. No spaces.
-  if (!usernameRaw) redirect("/me/settings?error=missing_username");
-  if (!/^[A-Za-z0-9._]{3,20}$/.test(usernameRaw)) {
-    redirect("/me/settings?error=invalid_username");
-  }
   // Real name: required, 1-50 chars, letters + spaces/hyphens/apostrophes/periods.
   if (!firstName) redirect("/me/settings?error=missing_first_name");
   if (!lastName) redirect("/me/settings?error=missing_last_name");
@@ -68,15 +62,6 @@ export async function updateProfile(formData: FormData) {
     postalCode = postalRaw;
   }
 
-  // Uniqueness check (case-insensitive) against other profiles.
-  const lower = usernameRaw.toLowerCase();
-  const conflict = await db
-    .select({ id: profiles.id })
-    .from(profiles)
-    .where(and(eq(profiles.username, lower), ne(profiles.id, userId)))
-    .limit(1);
-  if (conflict.length > 0) redirect("/me/settings?error=username_taken");
-
   // Phone uniqueness: one phone per account, ever. Compared on the canonical
   // (digits-only / + prefix) string so "+1 555 1234" and "+15551234" collide.
   if (phone) {
@@ -92,7 +77,6 @@ export async function updateProfile(formData: FormData) {
     await db
       .update(profiles)
       .set({
-        username: lower,
         firstName,
         lastName,
         phone,
@@ -104,10 +88,9 @@ export async function updateProfile(formData: FormData) {
       .where(eq(profiles.id, userId));
   } catch (e) {
     // Race condition belt-and-suspenders: a concurrent save could slip past
-    // the explicit uniqueness check above. The DB-level UNIQUE constraints
-    // on profiles.username and profiles.phone backstop it.
+    // the explicit uniqueness check above. The DB-level UNIQUE constraint
+    // on profiles.phone backstops it.
     const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes("profiles_username")) redirect("/me/settings?error=username_taken");
     if (msg.includes("profiles_phone")) redirect("/me/settings?error=phone_taken");
     throw e;
   }
@@ -118,7 +101,7 @@ export async function updateProfile(formData: FormData) {
     refType: "profile",
     refId: userId,
     payload: {
-      changed: ["username", "phone", "addressLine1", "addressLine2", "city", "postalCode"],
+      changed: ["firstName", "lastName", "phone", "addressLine1", "addressLine2", "city", "postalCode"],
     },
   });
 

@@ -86,7 +86,7 @@ export default async function ResultsPage() {
                   {winners.map((w) => (
                     <li key={w.id} className="flex justify-between">
                       <span>
-                        @{profileById.get(w.userId)?.username ?? "user"} · pred{" "}
+                        {displayName(profileById.get(w.userId))} · pred{" "}
                         {w.predictionValue} · err {w.absError?.toFixed(2)}
                       </span>
                       <span className="font-medium text-emerald-700 dark:text-emerald-400">
@@ -111,4 +111,13 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="mt-0.5 text-sm font-semibold">{value}</div>
     </div>
   );
+}
+
+// Display name for a profile in public-facing places like the winners
+// list. First name + last initial when both are populated; falls back to
+// "Player" so we never leak a username or an empty string.
+function displayName(p: { firstName: string | null; lastName: string | null } | undefined): string {
+  if (!p?.firstName) return "Player";
+  const last = p.lastName ? ` ${p.lastName[0]}.` : "";
+  return `${p.firstName}${last}`;
 }

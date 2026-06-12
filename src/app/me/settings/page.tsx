@@ -5,9 +5,6 @@ import { updateProfile } from "@/app/me/actions";
 export const dynamic = "force-dynamic";
 
 const ERR: Record<string, string> = {
-  missing_username: "Enter a username.",
-  invalid_username: "Usernames are 3–20 characters: letters, numbers, underscore, period.",
-  username_taken: "That username is already taken.",
   phone_taken: "That phone number is already linked to another Rallypot account.",
   invalid_phone: "Enter a valid phone number (10–15 digits).",
   invalid_postal: "Enter a valid US ZIP code (12345 or 12345-6789).",
@@ -43,7 +40,7 @@ export default async function SettingsPage({
           Edit profile
         </h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          Update your username, phone, and home address. Email, date of birth,
+          Update your name, phone, and home address. Email, date of birth,
           and state are managed elsewhere.
         </p>
       </header>
@@ -79,15 +76,6 @@ export default async function SettingsPage({
               placeholder="Doe"
             />
           </div>
-          <Field
-            name="username"
-            label="Username"
-            defaultValue={profile.username}
-            required
-            autoComplete="username"
-            placeholder="yourname"
-            hint="3–20 characters: letters, numbers, underscore, period."
-          />
           <ReadOnlyField
             label="Email"
             value={session.authUser?.email ?? ""}
