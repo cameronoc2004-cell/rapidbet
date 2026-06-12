@@ -101,9 +101,7 @@ export function SignUpForm() {
         </span>
       </label>
 
-      {state.error === "email_taken" ? (
-        <EmailTakenBanner />
-      ) : state.error && ERRORS[state.error] ? (
+      {state.error && ERRORS[state.error] ? (
         <ErrorBanner text={ERRORS[state.error]} />
       ) : null}
 
@@ -164,18 +162,3 @@ function ErrorBanner({ text }: { text: string }) {
   );
 }
 
-function EmailTakenBanner() {
-  return (
-    <div className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
-      <p className="text-sm text-[var(--text)]">
-        You already have a Rallypot account with that email.
-      </p>
-      <Link
-        href="/login"
-        className="block w-full rounded-md bg-[var(--primary)] px-3 py-2 text-center text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
-      >
-        Sign in instead
-      </Link>
-    </div>
-  );
-}

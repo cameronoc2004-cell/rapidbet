@@ -10,7 +10,6 @@ const ERRORS: Record<string, string> = {
   weak_password: "Password must be at least 8 characters.",
   password_mismatch: "Passwords don't match.",
   invalid_email: "Please enter a valid email.",
-  email_taken: "An account with that email already exists.",
   signup_failed: "Couldn't sign you up. Try again.",
   rate_limited: "Too many signups from this email recently. Wait a minute and try again.",
   smtp_failure: "We couldn't send the confirmation email. The team is being notified — try again in a few minutes.",
@@ -134,13 +133,14 @@ function VerifyEmailCard({
         Check your email
       </h2>
       <p className="text-sm text-[var(--text-muted)]">
-        We sent a confirmation link to{" "}
+        If{" "}
         {email ? (
           <span className="text-[var(--text)] font-mono">{email}</span>
         ) : (
-          <span>your inbox</span>
-        )}
-        . Click it to verify, then continue onboarding.
+          <span>that email</span>
+        )}{" "}
+        isn&apos;t already on Rallypot, we&apos;ve sent a confirmation
+        link. Click it to verify, then continue onboarding.
       </p>
       {error && ERRORS[error] && <ErrorBanner text={ERRORS[error]} />}
       {resent && (
@@ -233,24 +233,9 @@ function ErrorBanner({ text }: { text: string }) {
   );
 }
 
-// Special-case the "already have an account" path. A plain "email taken"
-// banner forces the user to figure out they need to switch to the Sign in
-// tab. Surface the sign-in CTA inline so it's one tap.
-function EmailTakenBanner() {
-  return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3 space-y-2">
-      <p className="text-sm text-[var(--text)]">
-        You already have a Rallypot account with that email.
-      </p>
-      <Link
-        href="/login"
-        className="block w-full rounded-md bg-[var(--primary)] px-3 py-2 text-center text-sm font-semibold text-[var(--bg)] transition-colors hover:bg-[var(--primary-hi)]"
-      >
-        Sign in instead
-      </Link>
-    </div>
-  );
-}
+// EmailTakenBanner removed — email enumeration protection now routes
+// existing-account signups through the same VerifyEmailCard interstitial
+// new users see, so the client never learns whether an email exists.
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   return (

@@ -197,16 +197,23 @@ export async function signUp(
       JSON.stringify({ email, error: error?.message, status: error?.status }),
     );
     const msg = (error?.message ?? "").toLowerCase();
+    // Email enumeration protection: when Supabase says "user already
+    // exists" we must NOT reveal that to the client. Telling the user
+    // "email_taken" gives any visitor a way to learn whether an address
+    // has an account here — fuel for phishing, credential stuffing, and
+    // targeted harassment. Bounce them to the same "check your email"
+    // interstitial we send a real new-user to. The interstitial's copy
+    // is intentionally hedged ("if that email isn't already on Rallypot,
+    // we've sent a link…") so it reads correctly for both paths, with a
+    // visible "Sign in" link for the existing-user branch.
+    if (msg.includes("already")) {
+      redirect("/login?mode=verify&email=" + encodeURIComponent(email));
+    }
     let code = "signup_failed";
-    if (msg.includes("already")) code = "email_taken";
-    else if (msg.includes("rate") || msg.includes("for security")) code = "rate_limited";
+    if (msg.includes("rate") || msg.includes("for security")) code = "rate_limited";
     else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("confirmation"))
       code = "smtp_failure";
     else if (msg.includes("disabled")) code = "signups_disabled";
-    // For email_taken specifically the user needs to see their typed email
-    // (the EmailTakenBanner offers a sign-in link); for the other Supabase
-    // failures all typed values stay so retrying doesn't make them re-type
-    // anything.
     return { error: code, values: allValues };
   }
 
