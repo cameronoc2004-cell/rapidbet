@@ -1,8 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, type KeyboardEvent } from "react";
 import { signUp, type SignUpState } from "./actions";
+
+// Enter on any field except the last → focus the next visible input.
+// Makes the iOS "Next" keyboard chevron actually advance, matching the
+// behavior of every native iOS form. Falls back to submit on the last
+// field (where enterKeyHint="done" so iOS shows the action key).
+function advanceOnEnter(e: KeyboardEvent<HTMLInputElement>) {
+  if (e.key !== "Enter") return;
+  const form = e.currentTarget.form;
+  if (!form) return;
+  const inputs = Array.from(form.elements).filter(
+    (el): el is HTMLInputElement =>
+      el instanceof HTMLInputElement &&
+      !el.disabled &&
+      el.type !== "hidden" &&
+      el.type !== "checkbox" &&
+      el.type !== "submit",
+  );
+  const i = inputs.indexOf(e.currentTarget);
+  if (i === -1 || i === inputs.length - 1) return;
+  e.preventDefault();
+  inputs[i + 1].focus();
+}
 
 const ERRORS: Record<string, string> = {
   weak_password: "Password must be at least 8 characters.",
@@ -77,6 +99,7 @@ export function SignUpForm() {
         name="confirmPassword"
         type="password"
         autoComplete="new-password"
+        enterKeyHint="done"
         required
       />
 
@@ -127,6 +150,7 @@ function Field({
   required,
   placeholder,
   autoComplete,
+  enterKeyHint = "next",
 }: {
   label: string;
   name: string;
@@ -135,6 +159,9 @@ function Field({
   required?: boolean;
   placeholder?: string;
   autoComplete?: string;
+  // iOS keyboard's bottom-right action key. "next" advances focus; "done"
+  // submits / dismisses. The last field in the form should be "done".
+  enterKeyHint?: "next" | "done" | "go" | "search" | "send" | "enter";
 }) {
   return (
     <label className="block">
@@ -148,6 +175,8 @@ function Field({
         required={required}
         placeholder={placeholder}
         autoComplete={autoComplete ?? (type === "password" ? "current-password" : name)}
+        enterKeyHint={enterKeyHint}
+        onKeyDown={advanceOnEnter}
         className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]/70 focus:border-[var(--primary)]"
       />
     </label>
