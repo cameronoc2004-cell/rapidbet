@@ -20,7 +20,14 @@ const config: CapacitorConfig = {
     allowNavigation: ["*.rallypot.org", "rallypot.org", "verify.didit.me"],
   },
   ios: {
-    contentInset: "automatic",
+    // contentInset:"never" disables WKWebView's automatic top/bottom
+    // safe-area insets. With "automatic" iOS adds its own padding on top
+    // of our CSS env(safe-area-inset-top), producing a doubled top inset
+    // — that was the ~300px black gap above the wordmark on signed-in
+    // screens. The app-shell layout (see src/app/layout.tsx) handles
+    // safe areas itself via env(); we want the WebView to fill the
+    // screen flush so our CSS is the only thing inserting padding.
+    contentInset: "never",
     backgroundColor: "#0A0C0B",
     // Pull-to-refresh feels weird when the page already auto-reloads on focus.
     scrollEnabled: true,
