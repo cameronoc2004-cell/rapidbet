@@ -43,10 +43,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto mt-12 max-w-sm">
       <div className="text-center">
-        <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--primary)]">
-          Free-to-play · Phase 1
-        </div>
-        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-[var(--text)]">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text)]">
           {APP_NAME}
         </h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
