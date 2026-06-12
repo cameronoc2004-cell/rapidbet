@@ -19,15 +19,14 @@ export async function TopBar() {
 
   return (
     <header
-      // Cap padding-top at 50px max. iOS notch / dynamic island reports
-      // 44–47px; mobile Safari can transiently inflate env() past 200px
-      // while its own chrome animates, which previously produced the
-      // giant black band the user reported above the wordmark. min()
-      // inlined here (NOT chained through a custom property) so iOS
-      // Safari's env-in-custom-property quirk can't ambush us. Fallback
-      // 50px on the env() handles browsers without env() support.
-      style={{ paddingTop: "min(env(safe-area-inset-top, 50px), 50px)" }}
-      className="fixed inset-x-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]"
+      // App-shell sibling — `shrink-0` keeps the bar at its natural
+      // height inside the flex column (it never scrolls, never gets
+      // squashed). paddingTop = safe-area inset so the wordmark sits
+      // just under the iOS status bar. The padding extends the bar's
+      // background INTO the notch area, so there's no visible gap above
+      // the bar on notched devices.
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="shrink-0 border-b border-[var(--border)] bg-[var(--bg)]"
     >
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-3 py-2 sm:px-4">
         <div className="flex min-w-0 items-center gap-1">

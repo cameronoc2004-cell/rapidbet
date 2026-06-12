@@ -34,10 +34,11 @@ const TABS: Tab[] = [
 // iOS-style full-width tab bar pinned to the bottom edge.
 //
 // Layout choices:
-// - position: fixed bottom-0. Pinned to the viewport edge so the bar can't
-//   move during scroll, overscroll, or content reflow — same anchoring as
-//   the top bar above. <main> reserves --bottombar-h of bottom padding so
-//   content always lives in the unoccupied middle of the viewport.
+// - App-shell sibling — `shrink-0` keeps the bar at its natural height
+//   inside the flex column (it never scrolls, never gets squashed).
+//   No position:fixed: with the new app-shell pattern (see layout.tsx)
+//   the document doesn't scroll at all, so there's nothing for a fixed
+//   element to anchor to differently than its flex position.
 // - Inner container max-w-3xl mirrors the main content + top bar so the
 //   tab bar's tap regions sit under the same column on tablet/desktop.
 // - py-3 + min-h-[44px] keep every tap target ≥ 44×44px (Apple HIG).
@@ -48,12 +49,8 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--surface)]"
-      // Same cap rationale as top-bar.tsx — inline min() so Safari can't
-      // inflate the inset and grow the bar. Home indicator is ~34px on
-      // every modern iPhone; 40px is enough headroom and stops anything
-      // weird from happening.
-      style={{ paddingBottom: "min(env(safe-area-inset-bottom, 40px), 40px)" }}
+      className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex max-w-3xl items-stretch">
         {TABS.map((tab) => {

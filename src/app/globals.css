@@ -13,19 +13,9 @@
   --surface-2: #1A201D;   /* inputs, secondary surfaces */
   --border: #242B28;
 
-  /* Chrome metrics. Both bars are position: fixed, anchored to viewport
-     so they cannot move during scroll, overscroll, or content updates.
-     --topbar-h / --bottombar-h are the layout's reserved vertical space
-     for each bar — used to pad <main> top + bottom so content sits in
-     the unoccupied middle, never underneath the chrome.
-
-     Plain pixel values, no env() / no min(): iOS Safari has a quirk
-     where env() chained through a custom property occasionally resolves
-     incorrectly, which produced runaway expanding top-bar padding.
-     100px / 100px covers every iPhone — notch is 44–47px, home
-     indicator is 34px, content row is ~50px in each bar. */
-  --topbar-h: 100px;
-  --bottombar-h: 100px;
+  /* No --topbar-h / --bottombar-h here any more. The app-shell pattern
+     (see layout.tsx) puts both bars inside a flex column so they
+     reserve their own space; nothing else needs to know their height. */
 
   /* Energy */
   --primary: #16C784;     /* money green */
@@ -62,15 +52,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* App-shell foundation. The document itself never scrolls — html/body are
+   locked to the viewport and an inner .app-shell flex column owns all
+   scrolling (within its <main> child). This is what makes the top bar
+   physically incapable of moving: it's a flex sibling of the scroll area,
+   not an overlay over a scrolling document. */
 html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--text);
-  /* Kill iOS rubber-band overscroll on the document. Without this, dragging
-     down at the top of the page lets the document slide below the viewport
-     top edge — the sticky top bar moves with it and a black gap appears
-     above "Rallypot · skill contests". With overscroll-behavior:none the
-     bar stays put. */
-  overscroll-behavior-y: none;
 }
 
 body {

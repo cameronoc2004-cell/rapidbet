@@ -63,42 +63,36 @@ export default async function RootLayout({
       className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable}`}
     >
       {/*
-        Mobile-first viewport plumbing:
-        - min-h-dvh (dynamic viewport height) so empty pages fill the
-          visible viewport correctly on iOS Safari where the address bar
-          shrinks/grows. min-h-screen / 100vh measures the *largest*
-          viewport and causes content to bleed under the address bar.
-        - overflow-x-hidden is a guard so a mis-sized child can't
-          horizontally scroll the page.
-        - The body is a flex column; <main> takes flex-1 so the
-          BottomTabBar — now a normal-flow sticky sibling — naturally
-          sits at the bottom on short pages without needing a magic
-          pb-20 offset on every page.
+        App shell.
+
+        html/body don't scroll (overflow:hidden + height:100% in
+        globals.css). The shell is a 100dvh flex column. TopBar +
+        BottomTabBar are flex siblings of <main>; only <main> scrolls.
+
+        Why this matters: with the previous pattern (fixed top bar
+        layered over a scrolling body) iOS rubber-band let the user
+        drag the document past the bar, revealing a black gap above
+        it. There is no body-level scroll to drag any more — the bar
+        is part of the shell, not floating on top of it.
+        min-h-0 on <main> is the well-known flexbox gotcha: a flex
+        child won't shrink below its content size unless you set it,
+        which silently breaks overflow.
       */}
-      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-[var(--bg)] text-[var(--text)]">
-        <DeepLinkHandler />
-        <NativeShell />
-        <TopBar />
-        {/* Top padding compensates for the fixed top bar. The CSS variable
-            --topbar-h is the bar's visual height (safe-area + inner row).
-            Without this offset, page content would render underneath the
-            fixed header. */}
-        <main
-          className="mx-auto w-full max-w-3xl min-w-0 flex-1 px-4"
-          style={{
-            paddingTop: "calc(var(--topbar-h) + 0.5rem)",
-            // Bottom padding matches the fixed BottomTabBar height when it's
-            // visible; otherwise just a small breathing room above the footer.
-            paddingBottom: showTabs ? "calc(var(--bottombar-h) + 1rem)" : "1.5rem",
-          }}
-        >
-          <PageTransition>{children}</PageTransition>
-        </main>
-        {/* No global footer — pages that want Terms/Privacy links render
-            them inline (see /login). Avoids the duplicate row issue and
-            keeps long-form legal pages from rendering a footer that
-            duplicates their own copy. */}
-        {showTabs && <BottomTabBar />}
+      <body>
+        <div className="flex h-[100dvh] flex-col overflow-hidden">
+          <DeepLinkHandler />
+          <NativeShell />
+          <TopBar />
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div
+              className="mx-auto w-full max-w-3xl min-w-0 px-4 pb-6 pt-3 sm:pt-4"
+              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            >
+              <PageTransition>{children}</PageTransition>
+            </div>
+          </main>
+          {showTabs && <BottomTabBar />}
+        </div>
       </body>
     </html>
   );
