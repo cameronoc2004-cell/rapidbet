@@ -2,7 +2,6 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { profiles, wallets } from "@/db/schema";
@@ -258,12 +257,12 @@ export async function signIn(formData: FormData) {
     }
     redirect("/login?error=bad_credentials");
   }
-  // Bust the layout cache so the now-onboarded chrome (top bar profile
-  // menu, balance pill, BottomTabBar) renders against the fresh session
-  // when we land on "/". Without this Next.js shows the prior signed-out
-  // layout tree and the tabs / wallet pill don't appear until a manual
-  // reload.
-  revalidatePath("/", "layout");
+  // No revalidatePath here — the layout is now force-dynamic
+  // (src/app/layout.tsx) and re-renders against fresh cookies on the
+  // redirect. Calling revalidatePath + redirect together in the same
+  // server action turned out to send a malformed response to mobile
+  // Safari, which would show its "This page couldn't load" error and
+  // need a manual Reload to continue.
   redirect("/");
 }
 
@@ -284,10 +283,8 @@ export async function resendVerification(formData: FormData) {
 export async function logout() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  // Bust the layout cache so the chrome (top-bar profile menu, balance
-  // pill, BottomTabBar) re-renders against the cleared session on the
-  // next navigation. Without this Next.js keeps the prior "logged in"
-  // layout tree and the sign-in screen renders with stale tabs.
-  revalidatePath("/", "layout");
+  // No revalidatePath — layout.tsx is now force-dynamic and re-renders
+  // on every navigation against fresh cookies, which is what makes
+  // showTabs flip false correctly on /login here.
   redirect("/login");
 }

@@ -228,15 +228,11 @@ export async function deleteAccount() {
     }
   }
 
-  // Invalidate the entire layout tree. Without this, Next.js's App Router
-  // keeps the previously-rendered root layout cached on the client across
-  // the redirect — so the stale "logged in" state (top-bar profile menu +
-  // balance pill + BottomTabBar) keeps showing on /login after the user
-  // has just been wiped from the DB. "layout" scope re-renders every
-  // layout from root down on the next navigation, which re-runs
-  // getCurrentSession against the now-cleared cookies → showTabs=false →
-  // chrome correctly hides.
-  revalidatePath("/", "layout");
+  // No revalidatePath here — layout.tsx is now force-dynamic and
+  // re-renders against fresh cookies on the next navigation, so the
+  // chrome correctly hides on /login. Calling revalidatePath in this
+  // action would send a malformed response to mobile Safari, which
+  // surfaces as "This page couldn't load" and forces a Reload tap.
 
   // Sign-up tab, not sign-in — a user who just deleted their account is
   // overwhelmingly more likely to want a fresh start than to re-enter the

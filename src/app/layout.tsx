@@ -40,6 +40,14 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false, email: false, address: false },
 };
 
+// Root layout reads getCurrentSession() to drive showTabs and the top
+// bar's profile chrome. Without force-dynamic, Next.js caches the layout
+// tree across navigations and the chrome ends up out of sync with the
+// current session (e.g. stale tabs after sign-in or sign-out). With
+// force-dynamic the layout re-runs on every request, so the chrome
+// reflects whoever is signed in right now.
+export const dynamic = "force-dynamic";
+
 export const viewport = {
   themeColor: "#0A0C0B",
   width: "device-width",
