@@ -9,7 +9,6 @@ import { genesisCredit } from "@/lib/ledger-ops";
 import { logAudit } from "@/db/audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { STARTER_VIRTUAL_BALANCE_MINOR } from "@/lib/config";
-import { normalizePhone } from "@/lib/phone";
 
 function field(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -84,7 +83,6 @@ export interface SignUpState {
     firstName?: string;
     lastName?: string;
     email?: string;
-    phone?: string;
     termsAccepted?: boolean;
   };
 }
@@ -98,7 +96,6 @@ export async function signUp(
   const confirmPassword = field(formData, "confirmPassword");
   const firstName = normalizeName(field(formData, "firstName"));
   const lastName = normalizeName(field(formData, "lastName"));
-  const phoneRaw = field(formData, "phone");
   // Checkbox: browsers only send "on" when checked, so absent === unchecked.
   const termsAccepted = formData.get("acceptTerms") === "on";
 
@@ -108,7 +105,6 @@ export async function signUp(
     firstName,
     lastName,
     email,
-    phone: phoneRaw,
     termsAccepted,
   };
   const without = (key: keyof typeof allValues): SignUpState["values"] => {
@@ -144,32 +140,9 @@ export async function signUp(
     return { error: "password_mismatch", values: allValues };
   }
 
-  // Phone is optional, but if provided must pass the same shape check used
-  // on /me/settings so the DB never sees an invalid value.
-  let phone: string | null = null;
-  if (phoneRaw) {
-    phone = normalizePhone(phoneRaw);
-    if (!phone) return { error: "invalid_phone", values: without("phone") };
-  }
-
   // Auto-derive a unique username from the email. User can change it later
   // in /me/settings.
   const username = await deriveUniqueUsername(email);
-
-  // Phone uniqueness: one phone per account. Checked here so the user gets
-  // a clear error before the Supabase signUp burns a rate-limit slot.
-  if (phone) {
-    const phoneTaken = await db
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(eq(profiles.phone, phone))
-      .limit(1);
-    if (phoneTaken.length > 0) {
-      // Keep the phone in `values` so the user can see what they typed; clearing
-      // it would be more confusing than not, given the error names it directly.
-      return { error: "phone_taken", values: allValues };
-    }
-  }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
@@ -235,7 +208,6 @@ export async function signUp(
         username,
         firstName,
         lastName,
-        phone,
         termsAcceptedAt: new Date(),
       })
       .returning();

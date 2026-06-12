@@ -18,8 +18,6 @@ const ERRORS: Record<string, string> = {
   missing_last_name: "Enter your last name.",
   invalid_first_name: "First name has invalid characters.",
   invalid_last_name: "Last name has invalid characters.",
-  invalid_phone: "Enter a valid phone number (10–15 digits).",
-  phone_taken: "That phone number is already linked to another Rallypot account.",
   verify_failed: "That confirmation link is expired or already used. Sign up again or sign in if you already have an account.",
   verify_device_mismatch: "Open the confirmation link in the same browser or app you signed up in. If you can't, sign up again on this device.",
   missing_code: "Confirmation link was missing its code.",

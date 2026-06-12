@@ -38,8 +38,6 @@ const ERRORS: Record<string, string> = {
   missing_last_name: "Enter your last name.",
   invalid_first_name: "First name has invalid characters.",
   invalid_last_name: "Last name has invalid characters.",
-  invalid_phone: "Enter a valid phone number (10–15 digits).",
-  phone_taken: "That phone number is already linked to another Rallypot account.",
   terms_required: "You must agree to the Terms of Service and Privacy Policy.",
 };
 
@@ -78,13 +76,6 @@ export function SignUpForm() {
         autoComplete="email"
         defaultValue={v.email ?? ""}
         required
-      />
-      <Field
-        label="Phone (optional)"
-        name="phone"
-        type="tel"
-        autoComplete="tel"
-        defaultValue={v.phone ?? ""}
       />
       <Field
         label="Password"
