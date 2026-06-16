@@ -139,8 +139,8 @@ function VerifyEmailCard({
         ) : (
           <span>that email</span>
         )}{" "}
-        isn&apos;t already on Rallypot, we&apos;ve sent a 6-digit code.
-        Enter it below to verify and finish setting up your account.
+        isn&apos;t already on Rallypot, we&apos;ve sent a verification
+        code. Enter it below to verify and finish setting up your account.
       </p>
       {error && ERRORS[error] && <ErrorBanner text={ERRORS[error]} />}
       {resent && (
@@ -156,12 +156,12 @@ function VerifyEmailCard({
             inputMode="numeric"
             autoComplete="one-time-code"
             pattern="[0-9]*"
-            maxLength={6}
+            maxLength={10}
             required
             autoFocus
-            placeholder="123456"
-            aria-label="6-digit verification code"
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-center font-mono text-lg tracking-[0.5em] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]/50 focus:border-[var(--primary)]"
+            placeholder="Enter code"
+            aria-label="Email verification code"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-center font-mono text-lg tracking-[0.3em] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]/50 placeholder:tracking-normal focus:border-[var(--primary)]"
           />
           <SubmitButton>Verify &amp; continue</SubmitButton>
         </form>

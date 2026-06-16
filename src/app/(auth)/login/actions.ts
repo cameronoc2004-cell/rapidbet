@@ -276,7 +276,11 @@ export async function signIn(formData: FormData) {
 export async function verifyEmailOtp(formData: FormData) {
   const email = field(formData, "email").toLowerCase();
   const token = field(formData, "code").replace(/\D/g, "");
-  if (!email.includes("@") || token.length !== 6) {
+  // Supabase's Email OTP Length is configurable (6–10 digits). Don't hardcode
+  // 6 — accept the whole supported range so a dashboard length change can't
+  // silently lock users out of the code field. verifyOtp rejects a genuinely
+  // wrong code regardless.
+  if (!email.includes("@") || token.length < 6 || token.length > 10) {
     redirect(
       "/login?mode=verify&email=" + encodeURIComponent(email) + "&error=invalid_code",
     );
