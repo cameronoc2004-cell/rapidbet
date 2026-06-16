@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfileId } from "@/lib/session";
-import { resendVerification, signIn } from "./actions";
+import { resendVerification, signIn, verifyEmailOtp } from "./actions";
 import { SignUpForm } from "./signup-form";
 import { APP_NAME } from "@/lib/config";
 
@@ -21,6 +21,8 @@ const ERRORS: Record<string, string> = {
   verify_failed: "That confirmation link is expired or already used. Sign up again or sign in if you already have an account.",
   verify_device_mismatch: "Open the confirmation link in the same browser or app you signed up in. If you can't, sign up again on this device.",
   missing_code: "Confirmation link was missing its code.",
+  invalid_code: "That code isn't right. Check the email and try again.",
+  expired_code: "That code expired. Tap Resend for a fresh one.",
   terms_required: "You must agree to the Terms of Service and Privacy Policy.",
 };
 
@@ -128,7 +130,7 @@ function VerifyEmailCard({
         </svg>
       </div>
       <h2 className="font-display text-xl font-semibold text-[var(--text)]">
-        Check your email
+        Enter your code
       </h2>
       <p className="text-sm text-[var(--text-muted)]">
         If{" "}
@@ -137,14 +139,32 @@ function VerifyEmailCard({
         ) : (
           <span>that email</span>
         )}{" "}
-        isn&apos;t already on Rallypot, we&apos;ve sent a confirmation
-        link. Click it to verify, then continue onboarding.
+        isn&apos;t already on Rallypot, we&apos;ve sent a 6-digit code.
+        Enter it below to verify and finish setting up your account.
       </p>
       {error && ERRORS[error] && <ErrorBanner text={ERRORS[error]} />}
       {resent && (
         <div className="rounded-md border border-[var(--primary-lo)]/40 bg-[var(--primary-lo)]/10 px-3 py-2 text-xs text-[var(--primary)]">
-          Sent another link.
+          Sent another code.
         </div>
+      )}
+      {email && (
+        <form action={verifyEmailOtp} className="space-y-3">
+          <input type="hidden" name="email" value={email} />
+          <input
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            required
+            autoFocus
+            placeholder="123456"
+            aria-label="6-digit verification code"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-center font-mono text-lg tracking-[0.5em] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]/50 focus:border-[var(--primary)]"
+          />
+          <SubmitButton>Verify &amp; continue</SubmitButton>
+        </form>
       )}
       {email && (
         <form action={resendVerification}>

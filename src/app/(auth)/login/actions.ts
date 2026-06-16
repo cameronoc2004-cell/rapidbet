@@ -266,6 +266,40 @@ export async function signIn(formData: FormData) {
   redirect("/");
 }
 
+// Verify the signup email with the 6-digit code Supabase emailed (template
+// must render {{ .Token }} — see the dashboard note). This runs ENTIRELY in
+// the in-app WKWebView: no magic link, so nothing ever leaves the app for
+// Safari, and no PKCE code_verifier cookie is needed (verifyOtp validates the
+// token directly). On success Supabase sets the session cookies AND flips
+// email_confirmed_at, so we drop the user straight into /onboarding to finish
+// profile completion (DOB + location).
+export async function verifyEmailOtp(formData: FormData) {
+  const email = field(formData, "email").toLowerCase();
+  const token = field(formData, "code").replace(/\D/g, "");
+  if (!email.includes("@") || token.length !== 6) {
+    redirect(
+      "/login?mode=verify&email=" + encodeURIComponent(email) + "&error=invalid_code",
+    );
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
+  if (error) {
+    const msg = (error.message ?? "").toLowerCase();
+    const code = msg.includes("expired") ? "expired_code" : "invalid_code";
+    redirect(
+      "/login?mode=verify&email=" + encodeURIComponent(email) + "&error=" + code,
+    );
+  }
+
+  // Session cookies are now set and email_confirmed_at is stamped. No
+  // revalidatePath here — pairing it with redirect in a server action sends a
+  // malformed response to mobile Safari (the WKWebView shows "page couldn't
+  // load"). layout.tsx is force-dynamic and re-renders against the fresh
+  // cookies on the redirect. Same rule as signIn/logout.
+  redirect("/onboarding");
+}
+
 export async function resendVerification(formData: FormData) {
   const email = field(formData, "email").toLowerCase();
   if (!email.includes("@")) {
