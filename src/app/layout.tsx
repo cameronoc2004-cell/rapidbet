@@ -6,6 +6,7 @@ import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { PageTransition } from "@/components/page-transition";
 import { DeepLinkHandler } from "@/components/deep-link-handler";
 import { NativeShell } from "@/components/native-shell";
+import { BootLoader } from "@/components/boot-loader";
 import { getCurrentSession, getOnboardingStatus } from "@/lib/session";
 
 const inter = Inter({
@@ -87,6 +88,7 @@ export default async function RootLayout({
         which silently breaks overflow.
       */}
       <body>
+        <BootLoader />
         <div className="flex h-[100dvh] flex-col overflow-hidden">
           <DeepLinkHandler />
           <NativeShell />
