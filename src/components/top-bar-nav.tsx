@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandWordmark } from "./brand-wordmark";
 
 interface NavLink {
   href: string;
@@ -59,26 +60,15 @@ export function TopBarNav({ links, username }: TopBarNavProps) {
 }
 
 // Also exposes the wordmark side so it can be illuminated when on "/".
-export function TopBarWordmark({
-  appName,
-  tagline,
-}: {
-  appName: string;
-  tagline: string;
-}) {
+export function TopBarWordmark({ tagline }: { tagline: string }) {
   const pathname = usePathname();
   const onHome = pathname === "/";
   return (
     <Link href="/" className="group flex items-baseline gap-2">
-      <span
-        className={
-          "font-display text-base font-bold tracking-tight transition-colors group-hover:text-white " +
-          (onHome ? "text-white" : "text-[var(--text)]")
-        }
-        aria-current={onHome ? "page" : undefined}
-      >
-        {appName}
-      </span>
+      <BrandWordmark
+        className="font-display text-base font-bold tracking-tight"
+        baseClassName={onHome ? "text-white" : "text-[var(--text)]"}
+      />
       <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] transition-colors group-hover:text-[var(--text)]">
         {tagline}
       </span>

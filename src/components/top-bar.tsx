@@ -1,6 +1,5 @@
 import { getCurrentSession, getOnboardingStatus, isAdmin } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
-import { APP_NAME } from "@/lib/config";
 import { BalancePill } from "./balance-pill";
 import { TopBarWordmark } from "./top-bar-nav";
 import { ProfileMenu } from "./profile-menu";
@@ -37,7 +36,7 @@ export async function TopBar() {
               isAdmin={admin}
             />
           )}
-          <TopBarWordmark appName={APP_NAME} tagline="skill contests" />
+          <TopBarWordmark tagline="skill contests" />
         </div>
         {profile ? <BalancePill balanceMinor={wallet?.virtualMinor ?? 0} /> : null}
       </div>

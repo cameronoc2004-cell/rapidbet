@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfileId } from "@/lib/session";
 import { resendVerification, signIn, verifyEmailOtp } from "./actions";
 import { SignUpForm } from "./signup-form";
-import { APP_NAME } from "@/lib/config";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 const ERRORS: Record<string, string> = {
   bad_credentials: "Incorrect email or password.",
@@ -43,8 +43,8 @@ export default async function LoginPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto mt-12 max-w-sm">
       <div className="text-center">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text)]">
-          {APP_NAME}
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          <BrandWordmark />
         </h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
           Per-quarter prediction contests. Closest answer wins the pool.
