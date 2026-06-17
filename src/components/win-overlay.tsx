@@ -9,8 +9,10 @@ interface WinOverlayProps {
   amountMinor: number;
 }
 
-const PRIMARY = "#16C784";
-const PRIMARY_HI = "#2BE39A";
+// Gold accent (mirror --primary / --primary-hi in globals.css). Used for the
+// confetti burst on a win.
+const PRIMARY = "#E4B13C";
+const PRIMARY_HI = "#F1C96B";
 
 export function WinOverlay({ amountMinor }: WinOverlayProps) {
   const [open, setOpen] = useState(true);
@@ -93,7 +95,7 @@ export function WinOverlay({ amountMinor }: WinOverlayProps) {
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ duration: 0.32, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm rounded-2xl border border-[var(--primary-lo)]/60 bg-[var(--surface)] p-8 text-center shadow-[0_0_60px_-20px_rgba(22,199,132,0.5)]"
+            className="relative w-full max-w-sm rounded-2xl border border-[var(--primary-lo)]/60 bg-[var(--surface)] p-8 text-center shadow-[0_0_60px_-20px_rgba(228,177,60,0.5)]"
           >
             <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--primary)]">
               Winner
@@ -103,7 +105,7 @@ export function WinOverlay({ amountMinor }: WinOverlayProps) {
             </h2>
 
             <div
-              className="mt-6 font-mono text-5xl font-bold tracking-tight text-[var(--primary)]"
+              className="text-gold-gradient mt-6 font-mono text-5xl font-bold tracking-tight"
               data-tabular="true"
             >
               {formatMoney(shown)}

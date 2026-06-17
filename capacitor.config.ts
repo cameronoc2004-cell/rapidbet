@@ -28,7 +28,7 @@ const config: CapacitorConfig = {
     // safe areas itself via env(); we want the WebView to fill the
     // screen flush so our CSS is the only thing inserting padding.
     contentInset: "never",
-    backgroundColor: "#0A0C0B",
+    backgroundColor: "#16191D",
     // Pull-to-refresh feels weird when the page already auto-reloads on focus.
     scrollEnabled: true,
     // Prevents iOS's default "page couldn't load" overlay from flashing
@@ -42,7 +42,7 @@ const config: CapacitorConfig = {
       // Brand-matched splash: same background as the body, no spinner
       // (looks more native), and we manually call hide() once the React
       // tree is mounted instead of letting it auto-dismiss too early.
-      backgroundColor: "#0A0C0B",
+      backgroundColor: "#16191D",
       launchAutoHide: false,
       showSpinner: false,
       androidScaleType: "CENTER_CROP",
@@ -51,7 +51,7 @@ const config: CapacitorConfig = {
       // Dark canvas, light glyphs. Locked so iOS doesn't try to swap it
       // mid-navigation.
       style: "DARK",
-      backgroundColor: "#0A0C0B",
+      backgroundColor: "#16191D",
       overlaysWebView: true,
     },
   },

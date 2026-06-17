@@ -1,35 +1,41 @@
 @import "tailwindcss";
 
 /* =============================================================================
-   Design tokens — sleek sports-fintech: deep black canvas, money-green action,
-   white reserved for emphasis. Mono tabular figures for all numbers so digits
-   don't jitter when balances and countdowns change.
+   Design tokens — gold-on-dark-slate brand (from the RallyPot trophy logo).
+   Dark-theme ONLY. Gold (--primary) is the accent for headings, the pot/prize
+   numbers, primary CTAs, and win/celebration moments; white (--text) carries
+   body copy. Mono tabular figures for all numbers so digits don't jitter when
+   balances and countdowns change.
    ============================================================================= */
 
 :root {
-  /* Surfaces */
-  --bg: #0A0C0B;          /* near-black canvas */
-  --surface: #121614;     /* raised cards */
-  --surface-2: #1A201D;   /* inputs, secondary surfaces */
-  --border: #242B28;
+  /* Surfaces — dark slate */
+  --bg: #16191D;          /* app background */
+  --surface: #1D242B;     /* cards, sheets */
+  --surface-2: #262E37;   /* raised surfaces: inputs, secondary surfaces */
+  --border: #2C343D;      /* dividers, strokes */
 
   /* No --topbar-h / --bottombar-h here any more. The app-shell pattern
      (see layout.tsx) puts both bars inside a flex column so they
      reserve their own space; nothing else needs to know their height. */
 
-  /* Energy */
-  --primary: #16C784;     /* money green */
-  --primary-hi: #2BE39A;
-  --primary-lo: #0E9E68;
+  /* Gold — brand / accent (replaces the old money-green) */
+  --primary: #E4B13C;     /* PRIMARY accent (gold) */
+  --primary-hi: #F1C96B;  /* highlights (gold light) */
+  --primary-lo: #C8941F;  /* pressed states, shadows (gold deep) */
 
-  /* Text. --text-muted bumped from #8B948F (5.8:1) → #A8B0AC (7.4:1) so
-     long-form gray copy ("Your in-flight entries — open or awaiting…")
-     reads cleanly on the near-black background. Passes WCAG AAA for
-     normal text. */
-  --text: #F2F5F3;
-  --text-muted: #A8B0AC;
+  /* Signature gold gradient — for the pot/prize total, the primary CTA, and
+     trophy/win moments. Apply via `background: var(--gold-gradient)` (use
+     background-clip:text for gold-gradient text). Never put small gold text
+     on top of this. */
+  --gold-gradient: linear-gradient(135deg, #F1C96B 0%, #E4B13C 50%, #C8941F 100%);
 
-  /* Destructive */
+  /* Text — white body copy, cool-gray secondary/tertiary */
+  --text: #FAFAFA;         /* primary / body */
+  --text-muted: #8A93A0;   /* secondary / caption */
+  --text-tertiary: #5C6571;/* tertiary / disabled */
+
+  /* Destructive (unchanged — not part of the green accent) */
   --danger: #E5564B;
 
   color-scheme: dark;
@@ -45,11 +51,23 @@
   --color-primary-lo: var(--primary-lo);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
+  --color-text-tertiary: var(--text-tertiary);
   --color-danger: var(--danger);
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-space-grotesk);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Gold-gradient helpers for the pot/prize total and the primary CTA. */
+.text-gold-gradient {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bg-gold-gradient {
+  background: var(--gold-gradient);
 }
 
 /* App-shell foundation. The document itself never scrolls — html/body are
@@ -102,10 +120,11 @@ body {
   animation: rb-pulse-dot 1.4s ease-in-out infinite;
 }
 
-/* Brief green-pulse glow used by BalancePill on change */
+/* Brief gold-pulse glow used by BalancePill on change. rgba is the gold
+   accent #E4B13C (228,177,60) — keep in sync with --primary. */
 @keyframes rb-pulse-glow {
-  0%   { box-shadow: 0 0 0 0 rgba(22, 199, 132, 0.55); }
-  100% { box-shadow: 0 0 0 14px rgba(22, 199, 132, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(228, 177, 60, 0.55); }
+  100% { box-shadow: 0 0 0 14px rgba(228, 177, 60, 0); }
 }
 .rb-pulse-glow {
   animation: rb-pulse-glow 700ms ease-out;
@@ -128,7 +147,7 @@ body {
   animation: rb-shimmer 1.6s linear infinite;
 }
 
-/* Focus rings: green, accessible */
+/* Focus rings: gold, accessible */
 *:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--primary);

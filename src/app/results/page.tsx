@@ -65,7 +65,7 @@ export default async function ResultsPage() {
                 <span
                   className={
                     (mine.payoutMinor ?? 0) > 0
-                      ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                      ? "font-semibold text-[var(--primary)]"
                       : "font-semibold text-neutral-500"
                   }
                 >
@@ -89,7 +89,7 @@ export default async function ResultsPage() {
                         {displayName(profileById.get(w.userId))} · pred{" "}
                         {w.predictionValue} · err {w.absError?.toFixed(2)}
                       </span>
-                      <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                      <span className="font-medium text-[var(--primary)]">
                         +${((w.payoutMinor ?? 0) / 100).toFixed(2)}
                       </span>
                     </li>

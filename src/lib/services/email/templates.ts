@@ -11,13 +11,14 @@ interface BuiltEmail {
   text: string;
 }
 
+// Mirror the brand tokens in globals.css (gold-on-dark-slate).
 const COLORS = {
-  bg: "#0A0C0B",
-  surface: "#121614",
-  border: "#242B28",
-  primary: "#16C784",
-  text: "#F2F5F3",
-  muted: "#8B948F",
+  bg: "#16191D",
+  surface: "#1D242B",
+  border: "#2C343D",
+  primary: "#E4B13C", // gold accent — CTA buttons + prize amounts
+  text: "#FAFAFA",
+  muted: "#8A93A0",
 };
 
 function shell(body: string): string {
