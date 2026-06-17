@@ -7,6 +7,7 @@ import { PageTransition } from "@/components/page-transition";
 import { DeepLinkHandler } from "@/components/deep-link-handler";
 import { NativeShell } from "@/components/native-shell";
 import { BootLoader } from "@/components/boot-loader";
+import { SiteFooter } from "@/components/site-footer";
 import { getCurrentSession, getOnboardingStatus } from "@/lib/session";
 
 const inter = Inter({
@@ -95,11 +96,12 @@ export default async function RootLayout({
           <TopBar />
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <div
-              className="mx-auto w-full max-w-3xl min-w-0 px-4 pb-6 pt-3 sm:pt-4"
+              className="mx-auto w-full min-w-0 max-w-3xl px-4 pb-6 pt-3 sm:pt-4 md:max-w-5xl md:px-8 md:pt-6"
               style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             >
               <PageTransition>{children}</PageTransition>
             </div>
+            <SiteFooter />
           </main>
           {showTabs && <BottomTabBar />}
         </div>

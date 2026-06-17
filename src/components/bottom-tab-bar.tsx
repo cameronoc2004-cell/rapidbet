@@ -49,7 +49,9 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)]"
+      // Phones only (native app + mobile web). On desktop web the same
+      // destinations live in the top bar (PrimaryNav), so this is hidden.
+      className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)] md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex max-w-3xl items-stretch">

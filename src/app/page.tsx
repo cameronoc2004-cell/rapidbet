@@ -1,15 +1,27 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, questions } from "@/db/schema";
+import { redirect } from "next/navigation";
 import { EventList, type EventListItem } from "@/components/event-list";
 import { RefreshButton } from "@/components/refresh-button";
 import { VerificationPrompt } from "@/components/verification-prompt";
-import { getVerificationStatus, requireOnboarded } from "@/lib/session";
+import { LandingPage } from "@/components/landing-page";
+import {
+  getCurrentSession,
+  getOnboardingStatus,
+  getVerificationStatus,
+} from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const session = await requireOnboarded();
+  // Logged-out web visitors get the marketing landing page (the NativeGate
+  // inside it sends the native app to /login instead). Signed-in-but-not-
+  // onboarded users still go finish onboarding; onboarded users see events.
+  const maybeSession = await getCurrentSession();
+  if (!maybeSession) return <LandingPage />;
+  if (!getOnboardingStatus(maybeSession).complete) redirect("/onboarding");
+  const session = maybeSession;
   const verification = await getVerificationStatus(session.profile!.id);
   const showVerifyPrompt =
     verification.status === "none" && !verification.promptDismissed;
