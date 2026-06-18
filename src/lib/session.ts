@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { kycRecords, profiles } from "@/db/schema";
 import { createSupabaseServerClient } from "./supabase/server";
-import { ADMIN_EMAILS, PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "./config";
+import { PLAY_MIN_AGE_YEARS, PLAY_PERMITTED_STATES } from "./config";
+import { isAdminAuthed } from "./admin-auth";
 
 export interface OnboardingStatus {
   emailVerified: boolean;
@@ -102,34 +103,23 @@ export async function requireSession() {
   return session;
 }
 
-// Admin gate. A user is admin if their email is in the ADMIN_EMAILS env
-// (owner bootstrap) OR their Supabase auth user has app_metadata.role === "admin".
-// app_metadata is set in the Supabase dashboard and is NOT user-editable, so a
-// normal sign-up can never grant admin.
-export function sessionIsAdmin(
-  session: Awaited<ReturnType<typeof getCurrentSession>>,
-): boolean {
-  const user = session?.authUser;
-  if (!user) return false;
-  const email = user.email?.toLowerCase();
-  if (email && ADMIN_EMAILS.includes(email)) return true;
-  return (user.app_metadata as { role?: string } | undefined)?.role === "admin";
-}
-
+// Admin gate. Admin is a SEPARATE auth system from consumer accounts — a signed
+// cookie set by the /admin/login passcode flow (see lib/admin-auth.ts), not the
+// Supabase session. These thin wrappers keep the existing call sites working.
 export async function isAdmin(): Promise<boolean> {
-  return sessionIsAdmin(await getCurrentSession());
+  return isAdminAuthed();
 }
 
 // Use on admin ACTIONS. 404 (not 401/redirect) on miss so the route is
 // undiscoverable to anyone who isn't an admin.
 export async function requireAdmin() {
-  if (!(await isAdmin())) notFound();
+  if (!(await isAdminAuthed())) notFound();
 }
 
 // Use on admin PAGES — sends non-admins to the dedicated admin sign-in rather
-// than 404, so a logged-out admin can actually log in.
+// than 404, so a signed-out admin can actually log in.
 export async function requireAdminOrLogin() {
-  if (!(await isAdmin())) redirect("/admin/login");
+  if (!(await isAdminAuthed())) redirect("/admin/login");
 }
 
 export function computeAgeYears(isoDob: string): number {

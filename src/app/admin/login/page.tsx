@@ -9,8 +9,7 @@ export const metadata = {
 };
 
 const ERRORS: Record<string, string> = {
-  bad_credentials: "Incorrect email or password.",
-  not_authorized: "That account isn't authorized for admin access.",
+  denied: "Invalid email or passcode.",
 };
 
 // Admin sign-in. No sign-up — accounts are provisioned manually in Supabase.
@@ -42,7 +41,7 @@ export default async function AdminLoginPage({
         className="mt-8 space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5"
       >
         <Field label="Email" name="email" type="email" required />
-        <Field label="Password" name="password" type="password" required />
+        <Field label="Passcode" name="passcode" type="password" required />
         {error && ERRORS[error] && (
           <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
             {ERRORS[error]}

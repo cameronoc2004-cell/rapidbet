@@ -1,38 +1,28 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ADMIN_EMAILS } from "@/lib/config";
+import {
+  verifyAdminCredentials,
+  setAdminSession,
+  clearAdminSession,
+} from "@/lib/admin-auth";
 
-// Is this authenticated user an admin? Owner bootstrap via env, plus any
-// Supabase auth user whose app_metadata.role === "admin" (set in the dashboard,
-// not user-editable). Mirrors sessionIsAdmin in lib/session.ts.
-function userIsAdmin(email: string, appMetadata: unknown): boolean {
-  if (ADMIN_EMAILS.includes(email.toLowerCase())) return true;
-  return (appMetadata as { role?: string } | undefined)?.role === "admin";
-}
-
-// Dedicated admin sign-in. There is intentionally NO sign-up — admin accounts
-// are created manually in Supabase. A non-admin who somehow knows valid
-// credentials is signed straight back out and never gets an admin session.
+// Admin sign-in: email + the universal passcode. Both must be correct — the
+// email must be on the Vercel ADMIN_EMAILS allowlist AND the passcode must
+// match ADMIN_PASSCODE. Either wrong → no entry, with a single generic error
+// so we don't reveal which part failed. No sign-up exists.
 export async function adminSignIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const passcode = String(formData.get("passcode") ?? "");
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.user) {
-    redirect("/admin/login?error=bad_credentials");
+  if (!verifyAdminCredentials(email, passcode)) {
+    redirect("/admin/login?error=denied");
   }
-  if (!userIsAdmin(email, data.user.app_metadata)) {
-    await supabase.auth.signOut();
-    redirect("/admin/login?error=not_authorized");
-  }
+  await setAdminSession(email);
   redirect("/admin");
 }
 
 export async function adminSignOut() {
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  await clearAdminSession();
   redirect("/admin/login");
 }
