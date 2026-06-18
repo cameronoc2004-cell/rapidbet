@@ -1,13 +1,12 @@
-import { BrandWordmark } from "./brand-wordmark";
-
-// The branded loading screen: a gold spinner ring above the RallyPot
-// wordmark, centered on the app background. Used as the navigation/data
-// loading state (app/loading.tsx) and inside the boot overlay (BootLoader)
-// that covers full-page loads. Pure presentational — no client hooks — so it
-// renders fine in both server and client trees.
+// The branded loading screen: the RallyPot logo on the app background, with a
+// soft entrance + gentle breathing pulse and an indeterminate progress bar.
+// Used as the navigation/data loading state (app/loading.tsx) and inside the
+// boot overlay (BootLoader) that covers full-page loads. Pure presentational —
+// no client hooks — so it renders fine in both server and client trees.
 //
-// Reduced motion: the ring stops spinning (motion-reduce:animate-none) but
-// stays visible as a static brand mark.
+// The logo is a transparent, tightly-cropped PNG (public/brand/rallypot-mark.png)
+// so it sits cleanly on the dark background and stays crisp when scaled down.
+// Reduced motion: the logo and bar hold still (see globals.css).
 export function BrandLoader({
   fullScreen = false,
   label = "Loading",
@@ -21,17 +20,26 @@ export function BrandLoader({
       aria-busy="true"
       aria-label={label}
       className={
-        "flex w-full flex-col items-center justify-center gap-5 " +
+        "flex w-full flex-col items-center justify-center gap-7 " +
         (fullScreen ? "min-h-[100dvh]" : "min-h-[55vh]")
       }
     >
-      <span className="relative inline-flex h-12 w-12" aria-hidden="true">
-        {/* track */}
-        <span className="absolute inset-0 rounded-full border-2 border-[var(--border)]" />
-        {/* gold arc that spins */}
-        <span className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-[var(--primary)] border-r-[var(--primary)] motion-reduce:animate-none" />
-      </span>
-      <BrandWordmark className="font-display text-xl font-bold tracking-tight" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/brand/rallypot-mark.png"
+        alt="RallyPot"
+        width={519}
+        height={479}
+        decoding="async"
+        draggable={false}
+        className="rb-logo h-auto w-40 select-none sm:w-48"
+      />
+      <div
+        className="relative h-[3px] w-32 overflow-hidden rounded-full bg-[var(--border)]"
+        aria-hidden="true"
+      >
+        <div className="rb-bar-fill bg-[var(--primary)]" />
+      </div>
       <span className="sr-only">{label}</span>
     </div>
   );
