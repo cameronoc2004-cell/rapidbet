@@ -3,8 +3,7 @@ import { and, desc, eq, inArray, sql, asc } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, profiles, questions, settlements } from "@/db/schema";
 import { requireAdminOrLogin } from "@/lib/session";
-import { createQuestion } from "./actions";
-import { AdminSubmitButton } from "@/components/admin-submit-button";
+import { AdminQuestionForm } from "@/components/admin-question-form";
 import { AdminQuestionRow } from "@/components/admin-question-row";
 import { formatMoney } from "@/lib/format";
 
@@ -114,116 +113,16 @@ export default async function AdminPage({
         </p>
       )}
 
-      <form action={createQuestion} className="space-y-4">
-        <textarea
-          name="title"
-          required
-          rows={2}
-          // Cycle the key on every "ok" so React reset-mounts the textarea
-          // after a successful post — defense-in-depth on top of the redirect.
-          key={`title-${ok ?? "fresh"}`}
-          defaultValue=""
-          placeholder="How many points will the home team score in Q1?"
-          className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-base text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]/70 focus:border-[var(--primary)]"
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block min-w-0">
-            <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Game
-            </span>
-            <select
-              name="gameId"
-              required
-              defaultValue={existingGames[0]?.id ?? "new"}
-              className="mt-1.5 w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
-            >
-              {existingGames.map((g) => (
-                <option key={g.id} value={g.id}>
-                  #{g.id} · {g.awayTeam} @ {g.homeTeam}
-                </option>
-              ))}
-              <option value="new">+ New game</option>
-            </select>
-          </label>
-
-          <label className="block min-w-0">
-            <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Quarter
-            </span>
-            <select
-              name="window"
-              defaultValue="Q1"
-              className="mt-1.5 w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
-            >
-              {["Q1", "Q2", "Q3", "Q4", "OT", "GAME"].map((q) => (
-                <option key={q} value={q}>
-                  {q}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Locks at gets the full row width on mobile so the native iOS
-              datetime picker has room. Goes back to half-width on sm+. */}
-          <label className="col-span-2 block min-w-0 sm:col-span-1">
-            <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Locks at
-            </span>
-            <input
-              type="datetime-local"
-              name="locksAt"
-              required
-              defaultValue={defaultLocksAtStr}
-              className="mt-1.5 w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
-            />
-          </label>
-
-          <label className="col-span-2 block min-w-0 sm:col-span-1">
-            <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Entry fee
-            </span>
-            <div className="mt-1.5 flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] focus-within:border-[var(--primary)]">
-              <span className="px-3 text-sm text-[var(--text-muted)]">$</span>
-              <input
-                type="number"
-                name="entryFeeUsd"
-                step="0.01"
-                min="0.01"
-                required
-                defaultValue="1.00"
-                className="w-full min-w-0 bg-transparent py-2.5 pr-3 text-sm text-[var(--text)] outline-none"
-              />
-            </div>
-          </label>
-        </div>
-
-        <details open className="rounded-lg border border-[var(--border)] bg-[var(--surface)]/60 px-4 py-3">
-          <summary className="cursor-pointer text-xs text-[var(--text-muted)]">
-            New game fields — required if Game = <span className="text-[var(--text)]">+ New game</span>
-          </summary>
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <input
-              name="newLeague"
-              placeholder="League"
-              defaultValue="NFL"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)]"
-            />
-            <input
-              name="newAway"
-              placeholder="Away"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)]"
-            />
-            <input
-              name="newHome"
-              placeholder="Home"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5 text-sm text-[var(--text)]"
-            />
-          </div>
-        </details>
-
-        <AdminSubmitButton>Post question</AdminSubmitButton>
-      </form>
+      <AdminQuestionForm
+        key={`form-${ok ?? "fresh"}`}
+        games={existingGames.map((g) => ({
+          id: g.id,
+          league: g.league,
+          awayTeam: g.awayTeam,
+          homeTeam: g.homeTeam,
+        }))}
+        defaultLocksAt={defaultLocksAtStr}
+      />
 
       {/* Active + planned questions: inline settle, void, edit, delete */}
       <section className="space-y-3">
