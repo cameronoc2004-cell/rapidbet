@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/top-bar";
@@ -60,11 +61,17 @@ export const viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The admin area (/admin*) is a separate, web-only surface with its own bare
+  // chrome (see app/admin/layout.tsx) — none of the consumer shell. Detect it
+  // from the path header set in proxy.ts.
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  const isAdminArea = pathname === "/admin" || pathname.startsWith("/admin/");
+
   // Show the bottom tab bar only for users who are signed in AND fully
   // onboarded (email verified + age 18+ + state allowed). Mid-flow users
   // and logged-out users see no nav so they can't tap into pages that would
   // just redirect them back to /onboarding or /login.
-  const session = await getCurrentSession();
+  const session = isAdminArea ? null : await getCurrentSession();
   const showTabs = !!session && getOnboardingStatus(session).complete;
 
   return (
@@ -89,22 +96,29 @@ export default async function RootLayout({
         which silently breaks overflow.
       */}
       <body>
-        <BootLoader />
-        <div className="flex h-[100dvh] flex-col overflow-hidden">
-          <DeepLinkHandler />
-          <NativeShell />
-          <TopBar />
-          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <div
-              className="mx-auto w-full min-w-0 max-w-3xl px-4 pb-6 pt-3 sm:pt-4 md:max-w-5xl md:px-8 md:pt-6"
-              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-            >
-              <PageTransition>{children}</PageTransition>
+        {isAdminArea ? (
+          // Admin provides its own layout (app/admin/layout.tsx).
+          children
+        ) : (
+          <>
+            <BootLoader />
+            <div className="flex h-[100dvh] flex-col overflow-hidden">
+              <DeepLinkHandler />
+              <NativeShell />
+              <TopBar />
+              <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <div
+                  className="mx-auto w-full min-w-0 max-w-3xl px-4 pb-6 pt-3 sm:pt-4 md:max-w-5xl md:px-8 md:pt-6"
+                  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                >
+                  <PageTransition>{children}</PageTransition>
+                </div>
+                <SiteFooter />
+              </main>
+              {showTabs && <BottomTabBar />}
             </div>
-            <SiteFooter />
-          </main>
-          {showTabs && <BottomTabBar />}
-        </div>
+          </>
+        )}
       </body>
     </html>
   );

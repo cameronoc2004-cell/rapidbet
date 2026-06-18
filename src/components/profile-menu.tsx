@@ -13,7 +13,6 @@ import { deleteAccount } from "@/app/me/actions";
 interface ProfileMenuProps {
   notifyEmail: boolean;
   notifyPush: boolean;
-  isAdmin: boolean;
 }
 
 // Hamburger button (top-left of the profile page) + slide-from-left drawer.
@@ -119,16 +118,6 @@ export function ProfileMenu(props: ProfileMenuProps) {
                     <span>Change password</span>
                     <Chevron />
                   </Link>
-                  {props.isAdmin && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--primary-lo)]"
-                    >
-                      <span>Admin tools</span>
-                      <Chevron />
-                    </Link>
-                  )}
                   <ConfirmAction
                     triggerLabel={
                       <span className="flex items-center justify-between">

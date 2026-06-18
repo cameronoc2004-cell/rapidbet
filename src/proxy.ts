@@ -4,7 +4,12 @@ import { NextResponse, type NextRequest } from "next/server";
 // Next.js 16 renamed middleware -> proxy. This refreshes the Supabase session
 // on each request so server components see a fresh token.
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // Expose the path to Server Components (via headers()) so the root layout can
+  // render the bare admin shell for /admin* and the consumer shell elsewhere.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +23,7 @@ export async function proxy(request: NextRequest) {
           for (const { name, value } of toSet) {
             request.cookies.set(name, value);
           }
-          response = NextResponse.next({ request });
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           for (const { name, value, options } of toSet) {
             response.cookies.set(name, value, options);
           }

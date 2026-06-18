@@ -10,6 +10,7 @@ import {
   getCurrentSession,
   getOnboardingStatus,
   getVerificationStatus,
+  sessionIsAdmin,
 } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,8 @@ export default async function Home() {
   // onboarded users still go finish onboarding; onboarded users see events.
   const maybeSession = await getCurrentSession();
   if (!maybeSession) return <LandingPage />;
+  // Admin accounts are admin-only — they never use the consumer app.
+  if (sessionIsAdmin(maybeSession)) redirect("/admin");
   if (!getOnboardingStatus(maybeSession).complete) redirect("/onboarding");
   const session = maybeSession;
   const verification = await getVerificationStatus(session.profile!.id);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentSession, getOnboardingStatus, isAdmin } from "@/lib/session";
+import { getCurrentSession, getOnboardingStatus } from "@/lib/session";
 import { getWallet } from "@/db/wallet";
 import { BalancePill } from "./balance-pill";
 import { TopBarWordmark } from "./top-bar-nav";
@@ -17,7 +17,6 @@ export async function TopBar() {
   const onboarded = !!session && getOnboardingStatus(session).complete;
   const profile = onboarded ? session.profile! : null;
   const wallet = profile ? await getWallet(profile.id) : null;
-  const admin = profile ? await isAdmin() : false;
 
   return (
     <header
@@ -37,7 +36,6 @@ export async function TopBar() {
               <ProfileMenu
                 notifyEmail={profile.notifyEmail ?? true}
                 notifyPush={profile.notifyPush ?? true}
-                isAdmin={admin}
               />
             )}
             <TopBarWordmark tagline="skill contests" />

@@ -102,19 +102,34 @@ export async function requireSession() {
   return session;
 }
 
-// Admin gate by email. Returns true if the signed-in user's email is in
-// ADMIN_EMAILS. No session = not admin.
-export async function isAdmin(): Promise<boolean> {
-  const session = await getCurrentSession();
-  const email = session?.authUser?.email?.toLowerCase();
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email);
+// Admin gate. A user is admin if their email is in the ADMIN_EMAILS env
+// (owner bootstrap) OR their Supabase auth user has app_metadata.role === "admin".
+// app_metadata is set in the Supabase dashboard and is NOT user-editable, so a
+// normal sign-up can never grant admin.
+export function sessionIsAdmin(
+  session: Awaited<ReturnType<typeof getCurrentSession>>,
+): boolean {
+  const user = session?.authUser;
+  if (!user) return false;
+  const email = user.email?.toLowerCase();
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+  return (user.app_metadata as { role?: string } | undefined)?.role === "admin";
 }
 
-// Use on every admin page + action. 404 (not 401/redirect) on miss so the
-// route is undiscoverable to anyone who isn't on the list.
+export async function isAdmin(): Promise<boolean> {
+  return sessionIsAdmin(await getCurrentSession());
+}
+
+// Use on admin ACTIONS. 404 (not 401/redirect) on miss so the route is
+// undiscoverable to anyone who isn't an admin.
 export async function requireAdmin() {
   if (!(await isAdmin())) notFound();
+}
+
+// Use on admin PAGES — sends non-admins to the dedicated admin sign-in rather
+// than 404, so a logged-out admin can actually log in.
+export async function requireAdminOrLogin() {
+  if (!(await isAdmin())) redirect("/admin/login");
 }
 
 export function computeAgeYears(isoDob: string): number {

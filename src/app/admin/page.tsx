@@ -2,7 +2,7 @@ import Link from "next/link";
 import { and, desc, eq, inArray, sql, asc } from "drizzle-orm";
 import { db } from "@/db/client";
 import { entries, games, profiles, questions, settlements } from "@/db/schema";
-import { requireAdmin } from "@/lib/session";
+import { requireAdminOrLogin } from "@/lib/session";
 import { createQuestion } from "./actions";
 import { AdminSubmitButton } from "@/components/admin-submit-button";
 import { AdminQuestionRow } from "@/components/admin-question-row";
@@ -44,7 +44,7 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ ok?: string; error?: string; settled?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminOrLogin();
   const { ok, error, settled } = await searchParams;
 
   // If the admin just settled a question we surface a result card at the top
